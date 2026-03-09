@@ -1,35 +1,46 @@
-import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
+import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
+import { PythonChecker, PythonVersionInfo } from '../../utils/pythonChecker.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('data-code-extension', 'hello.world');
+const messages = Messages.loadMessages('data-code-extension', 'data-code-extension.init');
 
-export type HelloWorldResult = {
-  name: string;
-  time: string;
+export type InitResult = {
+  success: boolean;
+  pythonVersion: PythonVersionInfo;
+  message: string;
 };
 
-export default class World extends SfCommand<HelloWorldResult> {
+export default class Init extends SfCommand<InitResult> {
   public static readonly summary = messages.getMessage('summary');
   public static readonly description = messages.getMessage('description');
   public static readonly examples = messages.getMessages('examples');
 
-  public static readonly flags = {
-    name: Flags.string({
-      char: 'n',
-      summary: messages.getMessage('flags.name.summary'),
-      description: messages.getMessage('flags.name.description'),
-      default: 'World',
-    }),
-  };
+  public async run(): Promise<InitResult> {
+    this.spinner.start(messages.getMessage('info.checkingPython'));
 
-  public async run(): Promise<HelloWorldResult> {
-    const { flags } = await this.parse(World);
-    const time = new Date().toDateString();
-    this.log(messages.getMessage('info.hello', [flags.name, time]));
-    return {
-      name: flags.name,
-      time,
-    };
+    try {
+      // Check Python 3.11+ is installed
+      const pythonInfo = await PythonChecker.checkPython311();
+
+      this.spinner.stop();
+      this.log(messages.getMessage('info.pythonFound', [pythonInfo.version, pythonInfo.command]));
+
+      // Add any additional initialization logic here in the future
+
+      this.log(messages.getMessage('info.initSuccess'));
+
+      return {
+        success: true,
+        pythonVersion: pythonInfo,
+        message: messages.getMessage('info.initSuccess'),
+      };
+    } catch (error) {
+      this.spinner.stop();
+
+      // The error will be properly handled by the Salesforce CLI framework
+      // as an SfError with actions, so we just throw it
+      throw error;
+    }
   }
 }
