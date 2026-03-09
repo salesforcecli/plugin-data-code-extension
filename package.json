@@ -45,6 +45,15 @@
     "topics": {
       "hello": {
         "description": "Commands to say hello."
+      },
+      "data-code-extension": {
+        "description": "Commands for Data Cloud Code Extension."
+      },
+      "data-code-extension script": {
+        "description": "Initialize and manage script-based Data Cloud packages."
+      },
+      "data-code-extension function": {
+        "description": "Initialize and manage function-based Data Cloud packages."
       }
     },
     "flexibleTaxonomy": true

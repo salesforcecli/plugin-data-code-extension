@@ -1,9 +1,10 @@
 import { TestContext } from '@salesforce/core/testSetup';
 import { expect } from 'chai';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
-import Init from '../../../src/commands/data-code-extension/init.js';
+import ScriptInit from '../../../src/commands/data-code-extension/script/init.js';
+import FunctionInit from '../../../src/commands/data-code-extension/function/init.js';
 
-describe('data-code-extension init', () => {
+describe('data-code-extension init commands', () => {
   const $$ = new TestContext();
   let sfCommandStubs: ReturnType<typeof stubSfCommandUx>;
 
@@ -15,12 +16,13 @@ describe('data-code-extension init', () => {
     $$.restore();
   });
 
-  it('runs init command successfully', async () => {
+  it('runs script init command successfully', async () => {
     try {
-      const result = await Init.run(['--package-dir', './test-dir']);
+      const result = await ScriptInit.run(['--package-dir', './test-dir']);
 
       // If Python 3.11+ is installed, check the success result
       expect(result.success).to.be.true;
+      expect(result.codeType).to.equal('script');
       expect(result.pythonVersion).to.have.property('command');
       expect(result.pythonVersion).to.have.property('version');
       expect(result.pythonVersion).to.have.property('major');
@@ -76,9 +78,9 @@ describe('data-code-extension init', () => {
     }
   });
 
-  it('returns JSON result when --json flag is used', async () => {
+  it('returns JSON result when --json flag is used for script init', async () => {
     try {
-      const result = await Init.run(['--json', '--package-dir', './test-json']);
+      const result = await ScriptInit.run(['--json', '--package-dir', './test-json']);
 
       // Should return a structured result
       expect(result).to.be.an('object');
@@ -96,24 +98,12 @@ describe('data-code-extension init', () => {
     }
   });
 
-  it('runs init with default code-type (script) and package-dir', async () => {
+  it('runs function init command successfully', async () => {
     try {
-      const result = await Init.run(['--package-dir', './test-package']);
-      expect(result.codeType).to.equal('script');  // default value
-      expect(result.packageDir).to.equal('./test-package');
-    } catch (error) {
-      // Handle case where Python is not installed
-      if (error instanceof Error) {
-        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable']);
-      }
-    }
-  });
-
-  it('runs init with --code-type function', async () => {
-    try {
-      const result = await Init.run(['--code-type', 'function', '--package-dir', './my-function']);
+      const result = await FunctionInit.run(['--package-dir', './test-function']);
       expect(result.codeType).to.equal('function');
-      expect(result.packageDir).to.equal('./my-function');
+      expect(result.packageDir).to.equal('./test-function');
+      expect(result.success).to.be.true;
     } catch (error) {
       // Handle case where Python is not installed
       if (error instanceof Error) {
@@ -122,11 +112,24 @@ describe('data-code-extension init', () => {
     }
   });
 
-  it('runs init with -c and -p shorthand flags', async () => {
+  it('script init returns codeType as script', async () => {
     try {
-      const result = await Init.run(['-c', 'function', '-p', './short-test']);
+      const result = await ScriptInit.run(['--package-dir', './test-script']);
+      expect(result.codeType).to.equal('script');
+      expect(result.packageDir).to.equal('./test-script');
+    } catch (error) {
+      // Handle case where Python is not installed
+      if (error instanceof Error) {
+        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable']);
+      }
+    }
+  });
+
+  it('function init returns codeType as function', async () => {
+    try {
+      const result = await FunctionInit.run(['--package-dir', './test-function-type']);
       expect(result.codeType).to.equal('function');
-      expect(result.packageDir).to.equal('./short-test');
+      expect(result.packageDir).to.equal('./test-function-type');
     } catch (error) {
       // Handle case where Python is not installed
       if (error instanceof Error) {
@@ -135,9 +138,21 @@ describe('data-code-extension init', () => {
     }
   });
 
-  it('fails when package-dir is not provided', async () => {
+  it('fails when package-dir is not provided for script init', async () => {
     try {
-      await Init.run(['--code-type', 'script']);
+      await ScriptInit.run([]);
+      expect.fail('Should have thrown an error for missing required flag');
+    } catch (error) {
+      expect(error).to.exist;
+      if (error instanceof Error) {
+        expect(error.message).to.include('package-dir');
+      }
+    }
+  });
+
+  it('fails when package-dir is not provided for function init', async () => {
+    try {
+      await FunctionInit.run([]);
       expect.fail('Should have thrown an error for missing required flag');
     } catch (error) {
       expect(error).to.exist;

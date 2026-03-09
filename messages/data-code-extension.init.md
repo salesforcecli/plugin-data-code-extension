@@ -8,9 +8,13 @@ Initializes the Data Code Extension by checking system requirements and setting 
 
 # examples
 
-- Initialize the Data Code Extension:
+- Initialize a script-based Data Cloud package:
 
-  <%= config.bin %> <%= command.id %>
+  <%= config.bin %> data-code-extension script init --package-dir ./my-script-package
+
+- Initialize a function-based Data Cloud package:
+
+  <%= config.bin %> data-code-extension function init --package-dir ./my-function-package
 
 # info.checkingPython
 
@@ -43,15 +47,6 @@ Data Code Extension initialized successfully!
 # error.initFailed
 
 Failed to initialize Data Code Extension
-
-# flags.codeType.summary
-
-Specify the code type for the package.
-
-# flags.codeType.description
-
-The code type determines the structure and configuration of the package.
-Choose 'script' for standalone script packages or 'function' for function-based packages.
 
 # flags.packageDir.summary
 

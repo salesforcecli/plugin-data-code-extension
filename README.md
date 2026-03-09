@@ -110,25 +110,99 @@ sf plugins
 ## Commands
 
 <!-- commands -->
+* [`sf data-code-extension function init`](#sf-data-code-extension-function-init)
+* [`sf data-code-extension script init`](#sf-data-code-extension-script-init)
+* [`sf hello world`](#sf-hello-world)
 
-- [`sf hello world`](#sf-hello-world)
+## `sf data-code-extension function init`
 
-## `sf hello world`
-
-Say hello either to the world or someone you know.
+Initialize the Data Code Extension environment.
 
 ```
 USAGE
-  $ sf hello world [--json] [-n <value>]
+  $ sf data-code-extension function init -p <value> [--json] [--flags-dir <value>]
+
+FLAGS
+  -p, --package-dir=<value>  (required) Directory path where the package will be created.
+
+GLOBAL FLAGS
+  --flags-dir=<value>  Import flag values from a directory.
+  --json               Format output as json.
+
+DESCRIPTION
+  Initialize the Data Code Extension environment.
+
+  Initializes the Data Code Extension by checking system requirements and setting up the necessary environment.
+
+EXAMPLES
+  Initialize a script-based Data Cloud package:
+
+    $ sf data-code-extension script init --package-dir ./my-script-package
+
+  Initialize a function-based Data Cloud package:
+
+    $ sf data-code-extension function init --package-dir ./my-function-package
+
+FLAG DESCRIPTIONS
+  -p, --package-dir=<value>  Directory path where the package will be created.
+
+    The directory path where the new package will be initialized.
+    The directory will be created if it does not exist.
+```
+
+## `sf data-code-extension script init`
+
+Initialize the Data Code Extension environment.
+
+```
+USAGE
+  $ sf data-code-extension script init -p <value> [--json] [--flags-dir <value>]
+
+FLAGS
+  -p, --package-dir=<value>  (required) Directory path where the package will be created.
+
+GLOBAL FLAGS
+  --flags-dir=<value>  Import flag values from a directory.
+  --json               Format output as json.
+
+DESCRIPTION
+  Initialize the Data Code Extension environment.
+
+  Initializes the Data Code Extension by checking system requirements and setting up the necessary environment.
+
+EXAMPLES
+  Initialize a script-based Data Cloud package:
+
+    $ sf data-code-extension script init --package-dir ./my-script-package
+
+  Initialize a function-based Data Cloud package:
+
+    $ sf data-code-extension function init --package-dir ./my-function-package
+
+FLAG DESCRIPTIONS
+  -p, --package-dir=<value>  Directory path where the package will be created.
+
+    The directory path where the new package will be initialized.
+    The directory will be created if it does not exist.
+```
+
+## `sf hello world`
+
+Say hello.
+
+```
+USAGE
+  $ sf hello world [--json] [--flags-dir <value>] [-n <value>]
 
 FLAGS
   -n, --name=<value>  [default: World] The name of the person you'd like to say hello to.
 
 GLOBAL FLAGS
-  --json  Format output as json.
+  --flags-dir=<value>  Import flag values from a directory.
+  --json               Format output as json.
 
 DESCRIPTION
-  Say hello either to the world or someone you know.
+  Say hello.
 
   Say hello either to the world or someone you know.
 
@@ -140,6 +214,10 @@ EXAMPLES
   Say hello to someone you know:
 
     $ sf hello world --name Astro
-```
 
+FLAG DESCRIPTIONS
+  -n, --name=<value>  The name of the person you'd like to say hello to.
+
+    This person can be anyone in the world!
+```
 <!-- commandsstop -->
