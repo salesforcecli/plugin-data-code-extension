@@ -1,4 +1,4 @@
-import { SfCommand } from '@salesforce/sf-plugins-core';
+import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { PythonChecker, type PythonVersionInfo } from '../../utils/pythonChecker.js';
 import { PipChecker, type PipPackageInfo } from '../../utils/pipChecker.js';
@@ -12,6 +12,8 @@ export type InitResult = {
   pythonVersion: PythonVersionInfo;
   packageInfo?: PipPackageInfo;
   binaryInfo?: DatacodeBinaryInfo;
+  codeType: 'script' | 'function';
+  packageDir: string;
   message: string;
 };
 
@@ -20,7 +22,28 @@ export default class Init extends SfCommand<InitResult> {
   public static readonly description = messages.getMessage('description');
   public static readonly examples = messages.getMessages('examples');
 
+  public static readonly flags = {
+    'code-type': Flags.string({
+      char: 'c',
+      summary: messages.getMessage('flags.codeType.summary'),
+      description: messages.getMessage('flags.codeType.description'),
+      options: ['script', 'function'],
+      default: 'script',
+    }),
+    'package-dir': Flags.directory({
+      char: 'p',
+      summary: messages.getMessage('flags.packageDir.summary'),
+      description: messages.getMessage('flags.packageDir.description'),
+      required: true,
+      exists: false,  // Allow non-existing directories (will be created)
+    }),
+  };
+
   public async run(): Promise<InitResult> {
+    const { flags } = await this.parse(Init);
+    const codeType = flags['code-type'] as 'script' | 'function';
+    const packageDir = flags['package-dir'];
+
     this.spinner.start(messages.getMessage('info.checkingPython'));
 
     try {
@@ -51,6 +74,8 @@ export default class Init extends SfCommand<InitResult> {
         pythonVersion: pythonInfo,
         packageInfo,
         binaryInfo,
+        codeType,
+        packageDir,
         message: messages.getMessage('info.initSuccess'),
       };
     } catch (error) {

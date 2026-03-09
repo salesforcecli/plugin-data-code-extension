@@ -17,7 +17,7 @@ describe('data-code-extension init', () => {
 
   it('runs init command successfully', async () => {
     try {
-      const result = await Init.run([]);
+      const result = await Init.run(['--package-dir', './test-dir']);
 
       // If Python 3.11+ is installed, check the success result
       expect(result.success).to.be.true;
@@ -78,7 +78,7 @@ describe('data-code-extension init', () => {
 
   it('returns JSON result when --json flag is used', async () => {
     try {
-      const result = await Init.run(['--json']);
+      const result = await Init.run(['--json', '--package-dir', './test-json']);
 
       // Should return a structured result
       expect(result).to.be.an('object');
@@ -92,6 +92,57 @@ describe('data-code-extension init', () => {
       if (error instanceof Error) {
         expect(error.name).to.be.a('string');
         expect(error.message).to.be.a('string');
+      }
+    }
+  });
+
+  it('runs init with default code-type (script) and package-dir', async () => {
+    try {
+      const result = await Init.run(['--package-dir', './test-package']);
+      expect(result.codeType).to.equal('script');  // default value
+      expect(result.packageDir).to.equal('./test-package');
+    } catch (error) {
+      // Handle case where Python is not installed
+      if (error instanceof Error) {
+        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable']);
+      }
+    }
+  });
+
+  it('runs init with --code-type function', async () => {
+    try {
+      const result = await Init.run(['--code-type', 'function', '--package-dir', './my-function']);
+      expect(result.codeType).to.equal('function');
+      expect(result.packageDir).to.equal('./my-function');
+    } catch (error) {
+      // Handle case where Python is not installed
+      if (error instanceof Error) {
+        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable']);
+      }
+    }
+  });
+
+  it('runs init with -c and -p shorthand flags', async () => {
+    try {
+      const result = await Init.run(['-c', 'function', '-p', './short-test']);
+      expect(result.codeType).to.equal('function');
+      expect(result.packageDir).to.equal('./short-test');
+    } catch (error) {
+      // Handle case where Python is not installed
+      if (error instanceof Error) {
+        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable']);
+      }
+    }
+  });
+
+  it('fails when package-dir is not provided', async () => {
+    try {
+      await Init.run(['--code-type', 'script']);
+      expect.fail('Should have thrown an error for missing required flag');
+    } catch (error) {
+      expect(error).to.exist;
+      if (error instanceof Error) {
+        expect(error.message).to.include('package-dir');
       }
     }
   });
