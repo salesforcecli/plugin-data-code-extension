@@ -35,6 +35,13 @@ describe('data-code-extension init', () => {
         expect(result.packageInfo).to.have.property('pipCommand');
       }
 
+      // Check binary info if present
+      if (result.binaryInfo) {
+        expect(result.binaryInfo).to.have.property('command');
+        expect(result.binaryInfo).to.have.property('version');
+        // path is optional
+      }
+
       expect(result.message).to.include('successfully');
 
       // Check that appropriate messages were logged
@@ -50,12 +57,17 @@ describe('data-code-extension init', () => {
         expect(output).to.include('Package');
       }
 
+      // Check for binary-related messages if binary was found
+      if (result.binaryInfo) {
+        expect(output).to.include('Datacustomcode binary');
+      }
+
       expect(output).to.include('successfully');
     } catch (error) {
-      // If Python 3.11+ is not installed or pip package is missing, verify the error is handled correctly
+      // If Python 3.11+ is not installed, pip package is missing, or binary is not found, verify the error is handled correctly
       expect(error).to.have.property('name');
       if (error instanceof Error) {
-        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled']);
+        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable']);
         expect(error.message).to.be.a('string');
         if ('actions' in error && error.actions) {
           expect(error.actions).to.be.an('array');

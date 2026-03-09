@@ -28,6 +28,14 @@ Checking required Python packages...
 
 Package '%s' version %s found
 
+# info.checkingBinary
+
+Checking datacustomcode binary...
+
+# info.binaryFound
+
+Datacustomcode binary version %s found
+
 # info.initSuccess
 
 Data Code Extension initialized successfully!

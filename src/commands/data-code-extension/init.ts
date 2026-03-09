@@ -2,6 +2,7 @@ import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { PythonChecker, type PythonVersionInfo } from '../../utils/pythonChecker.js';
 import { PipChecker, type PipPackageInfo } from '../../utils/pipChecker.js';
+import { DatacodeBinaryChecker, type DatacodeBinaryInfo } from '../../utils/datacodeBinaryChecker.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('data-code-extension', 'data-code-extension.init');
@@ -10,6 +11,7 @@ export type InitResult = {
   success: boolean;
   pythonVersion: PythonVersionInfo;
   packageInfo?: PipPackageInfo;
+  binaryInfo?: DatacodeBinaryInfo;
   message: string;
 };
 
@@ -35,12 +37,20 @@ export default class Init extends SfCommand<InitResult> {
       this.spinner.stop();
       this.log(messages.getMessage('info.packageFound', [packageInfo.name, packageInfo.version]));
 
+      // Check datacustomcode binary
+      this.spinner.start(messages.getMessage('info.checkingBinary'));
+      const binaryInfo = await DatacodeBinaryChecker.checkBinary();
+
+      this.spinner.stop();
+      this.log(messages.getMessage('info.binaryFound', [binaryInfo.version]));
+
       this.log(messages.getMessage('info.initSuccess'));
 
       return {
         success: true,
         pythonVersion: pythonInfo,
         packageInfo,
+        binaryInfo,
         message: messages.getMessage('info.initSuccess'),
       };
     } catch (error) {
