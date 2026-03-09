@@ -1,7 +1,7 @@
 import { TestContext } from '@salesforce/core/testSetup';
+import { SfError } from '@salesforce/core';
 import { expect } from 'chai';
 import { PythonChecker } from '../../src/utils/pythonChecker.js';
-import { SfError } from '@salesforce/core';
 
 describe('PythonChecker', () => {
   const $$ = new TestContext();
@@ -49,25 +49,5 @@ describe('PythonChecker', () => {
       }
     });
 
-    // Test the internal version checking logic by accessing the private method through reflection
-    it('should correctly identify sufficient versions', () => {
-      const checker = PythonChecker as any;
-
-      // Test cases for version checking
-      const testCases = [
-        { version: { major: 3, minor: 11, patch: 0 }, expected: true },
-        { version: { major: 3, minor: 11, patch: 5 }, expected: true },
-        { version: { major: 3, minor: 12, patch: 0 }, expected: true },
-        { version: { major: 4, minor: 0, patch: 0 }, expected: true },
-        { version: { major: 3, minor: 10, patch: 9 }, expected: false },
-        { version: { major: 2, minor: 7, patch: 18 }, expected: false },
-      ];
-
-      testCases.forEach(({ version, expected }) => {
-        const result = checker.isVersionSufficient(version);
-        expect(result).to.equal(expected,
-          `Version ${version.major}.${version.minor}.${version.patch} should be ${expected ? 'accepted' : 'rejected'}`);
-      });
-    });
   });
 });

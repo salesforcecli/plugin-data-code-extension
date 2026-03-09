@@ -1,5 +1,5 @@
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
 import { SfError } from '@salesforce/core';
 import { Messages } from '@salesforce/core';
 
@@ -8,13 +8,13 @@ const execAsync = promisify(exec);
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('data-code-extension', 'pythonChecker');
 
-export interface PythonVersionInfo {
+export type PythonVersionInfo = {
   command: string;
   version: string;
   major: number;
   minor: number;
   patch: number;
-}
+};
 
 export class PythonChecker {
   private static readonly MIN_MAJOR = 3;
@@ -22,6 +22,7 @@ export class PythonChecker {
 
   /**
    * Checks if Python 3.11 or higher is installed on the system.
+   *
    * @returns PythonVersionInfo if Python 3.11+ is found
    * @throws SfError if Python is not found or version is insufficient
    */
@@ -31,6 +32,7 @@ export class PythonChecker {
 
     for (const command of pythonCommands) {
       try {
+        // eslint-disable-next-line no-await-in-loop
         const versionInfo = await this.getPythonVersion(command);
 
         if (this.isVersionSufficient(versionInfo)) {
@@ -66,6 +68,7 @@ export class PythonChecker {
 
   /**
    * Gets the Python version for a specific command.
+   *
    * @param command The Python command to check (python or python3)
    * @returns PythonVersionInfo
    */
@@ -94,6 +97,7 @@ export class PythonChecker {
 
   /**
    * Checks if the Python version meets the minimum requirements.
+   *
    * @param versionInfo The Python version information
    * @returns true if version is 3.11 or higher
    */

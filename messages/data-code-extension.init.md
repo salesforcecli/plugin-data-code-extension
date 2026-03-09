@@ -20,6 +20,14 @@ Checking Python version...
 
 Python %s found at '%s'
 
+# info.checkingPackages
+
+Checking required Python packages...
+
+# info.packageFound
+
+Package '%s' version %s found
+
 # info.initSuccess
 
 Data Code Extension initialized successfully!

@@ -1,2 +1,3 @@
 // Export utilities for use by other commands
-export { PythonChecker, PythonVersionInfo } from './utils/pythonChecker.js';
+export { PythonChecker, type PythonVersionInfo } from './utils/pythonChecker.js';
+export { PipChecker, type PipPackageInfo } from './utils/pipChecker.js';

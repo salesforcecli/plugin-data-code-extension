@@ -1,6 +1,7 @@
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { PythonChecker, PythonVersionInfo } from '../../utils/pythonChecker.js';
+import { PythonChecker, type PythonVersionInfo } from '../../utils/pythonChecker.js';
+import { PipChecker, type PipPackageInfo } from '../../utils/pipChecker.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('data-code-extension', 'data-code-extension.init');
@@ -8,6 +9,7 @@ const messages = Messages.loadMessages('data-code-extension', 'data-code-extensi
 export type InitResult = {
   success: boolean;
   pythonVersion: PythonVersionInfo;
+  packageInfo?: PipPackageInfo;
   message: string;
 };
 
@@ -26,13 +28,19 @@ export default class Init extends SfCommand<InitResult> {
       this.spinner.stop();
       this.log(messages.getMessage('info.pythonFound', [pythonInfo.version, pythonInfo.command]));
 
-      // Add any additional initialization logic here in the future
+      // Check required pip packages
+      this.spinner.start(messages.getMessage('info.checkingPackages'));
+      const packageInfo = await PipChecker.checkPackage('salesforce-data-customcode');
+
+      this.spinner.stop();
+      this.log(messages.getMessage('info.packageFound', [packageInfo.name, packageInfo.version]));
 
       this.log(messages.getMessage('info.initSuccess'));
 
       return {
         success: true,
         pythonVersion: pythonInfo,
+        packageInfo,
         message: messages.getMessage('info.initSuccess'),
       };
     } catch (error) {
