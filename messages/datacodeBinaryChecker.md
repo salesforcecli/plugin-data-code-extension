@@ -151,3 +151,69 @@ Failed to create archive for package at '%s': %s
 - Check that the package directory is valid
 - Run 'datacustomcode version' to verify the binary works
 - Check the error message for specific issues
+
+# error.deployAuthenticationFailed
+
+Failed to authenticate with Salesforce org '%s'
+
+# error.deployPackageInvalid
+
+Package validation failed for '%s'. The package format is invalid or corrupted.
+
+# error.deployConflict
+
+A deployment with name '%s' and version '%s' already exists
+
+# error.deployQuotaExceeded
+
+Deployment quota exceeded for the organization
+
+# error.deployNetworkError
+
+Network error occurred during deployment
+
+# error.deployExecutionFailed
+
+Failed to deploy package '%s': %s
+
+# actions.deployAuthenticationFailed
+
+- Verify the target org username/alias is correct
+- Re-authenticate with 'sf org login web' or 'sf org login sfdx-url'
+- Check that the org has the necessary permissions
+- Ensure the org has Data Cloud enabled
+
+# actions.deployPackageInvalid
+
+- Verify the package was created with 'data-code-extension zip' command
+- Check that the package directory contains valid code
+- Ensure the package has not been corrupted
+- Re-package the code and try again
+
+# actions.deployConflict
+
+- Use a different name or version for your deployment
+- Check existing deployments in your org
+- Consider updating the version number
+- Delete the existing deployment if appropriate
+
+# actions.deployQuotaExceeded
+
+- Check your organization's deployment quota
+- Remove unused deployments
+- Contact your Salesforce administrator
+- Consider upgrading your org limits
+
+# actions.deployNetworkError
+
+- Check your internet connection
+- Verify firewall and proxy settings
+- Try again after a few moments
+- Check Salesforce service status
+
+# actions.deployExecutionFailed
+
+- Verify all required flags are provided correctly
+- Check the datacustomcode binary is properly installed
+- Review the error message for specific issues
+- Ensure the package is properly initialized and zipped

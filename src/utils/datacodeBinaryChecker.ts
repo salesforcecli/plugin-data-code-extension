@@ -40,6 +40,14 @@ export type DatacodeZipExecutionResult = {
   archiveSize?: string;
 };
 
+export type DatacodeDeployExecutionResult = {
+  stdout: string;
+  stderr: string;
+  deploymentId?: string;
+  endpointUrl?: string;
+  status?: string;
+};
+
 export type ScanResult = {
   success: boolean;
   pythonVersion: PythonVersionInfo;
@@ -357,6 +365,136 @@ export class DatacodeBinaryChecker {
         messages.getMessage('error.zipExecutionFailed', [packageDir, errorMessage]),
         'ZipExecutionFailed',
         messages.getMessages('actions.zipExecutionFailed')
+      );
+    }
+  }
+
+  /**
+   * Executes datacustomcode deploy with the specified parameters.
+   *
+   * @param name The name of the package to deploy
+   * @param version The version of the package
+   * @param description The description of the package
+   * @param packageDir The directory containing the packaged code
+   * @param targetOrg The target Salesforce org username/alias
+   * @param cpuSize The CPU size for the deployment
+   * @param network Optional network configuration for Jupyter notebooks
+   * @param functionInvokeOpt Optional function invocation option (function packages only)
+   * @returns Execution result with stdout, stderr, and deployment details
+   * @throws SfError if execution fails
+   */
+  public static async executeBinaryDeploy(
+    name: string,
+    version: string,
+    description: string,
+    packageDir: string,
+    targetOrg: string,
+    cpuSize: string,
+    network?: string,
+    functionInvokeOpt?: string
+  ): Promise<DatacodeDeployExecutionResult> {
+    // Build the command with required and optional flags
+    let command = 'datacustomcode deploy';
+    command += ` --name "${name}"`;
+    command += ` --version "${version}"`;
+    command += ` --description "${description}"`;
+    command += ` --path "${packageDir}"`; // Note: package-dir maps to --path
+    command += ` --sf-cli-org "${targetOrg}"`; // Note: target-org maps to --sf-cli-org
+    command += ` --cpu-size ${cpuSize}`;
+
+    if (network) {
+      command += ` --network "${network}"`;
+    }
+
+    if (functionInvokeOpt) {
+      command += ` --function-invoke-opt "${functionInvokeOpt}"`;
+    }
+
+    try {
+      const { stdout, stderr } = await execAsync(command, {
+        timeout: 300_000, // 5 minute timeout (deployment can take time)
+      });
+
+      // Parse deployment ID from output
+      let deploymentId: string | undefined;
+      const deploymentIdPattern = /Deployment ID: (.+)/i;
+      const deploymentMatch = deploymentIdPattern.exec(stdout);
+      if (deploymentMatch) {
+        deploymentId = deploymentMatch[1].trim();
+      }
+
+      // Parse endpoint URL from output
+      let endpointUrl: string | undefined;
+      const endpointUrlPattern = /Endpoint URL: (.+)/i;
+      const endpointMatch = endpointUrlPattern.exec(stdout);
+      if (endpointMatch) {
+        endpointUrl = endpointMatch[1].trim();
+      }
+
+      // Parse deployment status from output
+      let status: string | undefined;
+      const statusPattern = /Status: (.+)/i;
+      const statusMatch = statusPattern.exec(stdout);
+      if (statusMatch) {
+        status = statusMatch[1].trim();
+      }
+
+      return {
+        stdout: stdout.trim(),
+        stderr: stderr.trim(),
+        deploymentId,
+        endpointUrl,
+        status,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      // Check for specific error patterns
+      if (errorMessage.includes('Authentication failed') || errorMessage.includes('Invalid credentials')) {
+        throw new SfError(
+          messages.getMessage('error.deployAuthenticationFailed', [targetOrg]),
+          'DeployAuthenticationFailed',
+          messages.getMessages('actions.deployAuthenticationFailed')
+        );
+      }
+
+      if (errorMessage.includes('Invalid package') || errorMessage.includes('Package validation failed')) {
+        throw new SfError(
+          messages.getMessage('error.deployPackageInvalid', [packageDir]),
+          'DeployPackageInvalid',
+          messages.getMessages('actions.deployPackageInvalid')
+        );
+      }
+
+      if (errorMessage.includes('already exists') || errorMessage.includes('Conflict')) {
+        throw new SfError(
+          messages.getMessage('error.deployConflict', [name, version]),
+          'DeployConflict',
+          messages.getMessages('actions.deployConflict')
+        );
+      }
+
+      if (errorMessage.includes('quota exceeded') || errorMessage.includes('limit reached')) {
+        throw new SfError(
+          messages.getMessage('error.deployQuotaExceeded'),
+          'DeployQuotaExceeded',
+          messages.getMessages('actions.deployQuotaExceeded')
+        );
+      }
+
+      if (errorMessage.includes('network error') || errorMessage.includes('connection refused')) {
+        throw new SfError(
+          messages.getMessage('error.deployNetworkError'),
+          'DeployNetworkError',
+          messages.getMessages('actions.deployNetworkError')
+        );
+      }
+
+      // Generic execution error
+      throw new SfError(
+        messages.getMessage('error.deployExecutionFailed', [name, errorMessage]),
+        'DeployExecutionFailed',
+        messages.getMessages('actions.deployExecutionFailed')
       );
     }
   }
