@@ -161,15 +161,7 @@ export class DatacodeBinaryChecker {
     // Build the command with optional flags
     let command = 'datacustomcode scan';
 
-    // Add optional config path
-    if (config) {
-      command += ` --config ${config}`;
-    } else {
-      // Default to payload/config.json if not specified
-      command += ' --config payload/config.json';
-    }
-
-    // Add boolean flags
+    // Add boolean flags FIRST (before positional argument)
     if (dryRun) {
       command += ' --dry-run';
     }
@@ -177,6 +169,10 @@ export class DatacodeBinaryChecker {
     if (noRequirements) {
       command += ' --no-requirements';
     }
+
+    // Add config as positional argument LAST (with proper quoting for paths with spaces)
+    const configPath = config ?? 'payload/config.json';
+    command += ` "${configPath}"`;
 
     try {
       const { stdout, stderr } = await execAsync(command, {
