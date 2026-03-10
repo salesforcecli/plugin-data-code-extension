@@ -1,6 +1,6 @@
 # summary
 
-Initialize the Data Code Extension function package
+Initialize the Data Code Extension %s package
 
 # description
 
@@ -8,9 +8,9 @@ Initializes the Data Code Extension by checking system requirements and setting 
 
 # examples
 
-- Initialize a function-based Data Cloud package:
+- Initialize a %s-based Data Cloud package:
 
-  <%= config.bin %> data-code-extension function init --package-dir ./my-function-package
+  <%= config.bin %> data-code-extension %s init --package-dir ./my-%s-package
 
 # info.checkingPython
 
