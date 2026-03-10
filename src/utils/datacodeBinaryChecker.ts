@@ -2,6 +2,8 @@ import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { SfError } from '@salesforce/core';
 import { Messages } from '@salesforce/core';
+import { type PythonVersionInfo } from './pythonChecker.js';
+import { type PipPackageInfo } from './pipChecker.js';
 
 const execAsync = promisify(exec);
 
@@ -19,6 +21,26 @@ export type DatacodeInitExecutionResult = {
   stderr: string;
   filesCreated?: string[];
   projectPath: string;
+};
+
+export type DatacodeScanExecutionResult = {
+  stdout: string;
+  stderr: string;
+  workingDirectory: string;
+  permissions?: string[];
+  requirements?: string[];
+  filesScanned?: string[];
+};
+
+export type ScanResult = {
+  success: boolean;
+  pythonVersion: PythonVersionInfo;
+  packageInfo?: PipPackageInfo;
+  binaryInfo?: DatacodeBinaryInfo;
+  codeType: 'script' | 'function';
+  workingDirectory: string;
+  message: string;
+  executionResult?: DatacodeScanExecutionResult;
 };
 
 export class DatacodeBinaryChecker {
@@ -74,7 +96,7 @@ export class DatacodeBinaryChecker {
 
     try {
       const { stdout, stderr } = await execAsync(command, {
-        timeout: 30000, // 30 second timeout
+        timeout: 30_000, // 30 second timeout
       });
 
       // Parse created files from output if available
@@ -116,6 +138,117 @@ export class DatacodeBinaryChecker {
         messages.getMessage('error.initExecutionFailed', [packageDir, errorMessage]),
         'InitExecutionFailed',
         messages.getMessages('actions.initExecutionFailed')
+      );
+    }
+  }
+
+  /**
+   * Executes datacustomcode scan with the specified parameters.
+   *
+   * @param workingDir The directory to scan (should contain an initialized package)
+   * @param config Optional path to config.json file
+   * @param dryRun Whether to perform a dry run without modifying files
+   * @param noRequirements Whether to skip updating requirements.txt
+   * @returns Execution result with stdout, stderr, and parsed scan data
+   * @throws SfError if execution fails
+   */
+  public static async executeBinaryScan(
+    workingDir: string,
+    config?: string,
+    dryRun: boolean = false,
+    noRequirements: boolean = false
+  ): Promise<DatacodeScanExecutionResult> {
+    // Build the command with optional flags
+    let command = 'datacustomcode scan';
+
+    // Add optional config path
+    if (config) {
+      command += ` --config ${config}`;
+    } else {
+      // Default to payload/config.json if not specified
+      command += ' --config payload/config.json';
+    }
+
+    // Add boolean flags
+    if (dryRun) {
+      command += ' --dry-run';
+    }
+
+    if (noRequirements) {
+      command += ' --no-requirements';
+    }
+
+    try {
+      const { stdout, stderr } = await execAsync(command, {
+        cwd: workingDir,
+        timeout: 60_000, // 60 second timeout (longer than init's 30 seconds)
+      });
+
+      // Parse scan results from output
+      const permissions: string[] = [];
+      const requirements: string[] = [];
+      const filesScanned: string[] = [];
+
+      // Parse permissions (expected format: "Permission required: <permission>")
+      const permissionPattern = /Permission required: (.+)/g;
+      let match;
+      while ((match = permissionPattern.exec(stdout)) !== null) {
+        permissions.push(match[1].trim());
+      }
+
+      // Parse requirements (expected format: "Dependency found: <requirement>")
+      const requirementPattern = /Dependency found: (.+)/g;
+      while ((match = requirementPattern.exec(stdout)) !== null) {
+        requirements.push(match[1].trim());
+      }
+
+      // Parse scanned files (expected format: "Scanned: <file>")
+      const filePattern = /Scanned: (.+)/g;
+      while ((match = filePattern.exec(stdout)) !== null) {
+        filesScanned.push(match[1].trim());
+      }
+
+      return {
+        stdout: stdout.trim(),
+        stderr: stderr.trim(),
+        workingDirectory: workingDir,
+        permissions: permissions.length > 0 ? permissions : undefined,
+        requirements: requirements.length > 0 ? requirements : undefined,
+        filesScanned: filesScanned.length > 0 ? filesScanned : undefined,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      // Check for specific error patterns
+      if (errorMessage.includes('Permission denied')) {
+        throw new SfError(
+          messages.getMessage('error.scanPermissionDenied', [workingDir]),
+          'ScanPermissionDenied',
+          messages.getMessages('actions.scanPermissionDenied')
+        );
+      }
+
+      if (errorMessage.includes('config') && errorMessage.includes('not found')) {
+        throw new SfError(
+          messages.getMessage('error.configNotFound', [config ?? 'payload/config.json']),
+          'ConfigNotFound',
+          messages.getMessages('actions.configNotFound')
+        );
+      }
+
+      if (errorMessage.includes('not initialized') || errorMessage.includes('not a package')) {
+        throw new SfError(
+          messages.getMessage('error.notInPackageDir'),
+          'NotInPackageDir',
+          messages.getMessages('actions.notInPackageDir')
+        );
+      }
+
+      // Generic execution error
+      throw new SfError(
+        messages.getMessage('error.scanExecutionFailed', [workingDir, errorMessage]),
+        'ScanExecutionFailed',
+        messages.getMessages('actions.scanExecutionFailed')
       );
     }
   }

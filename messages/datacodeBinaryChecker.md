@@ -58,3 +58,45 @@ Failed to initialize package at '%s': %s
 - Check that all required dependencies are installed
 - Run 'datacustomcode version' to verify the binary works
 - Check the error message for specific issues
+
+# error.scanPermissionDenied
+
+Permission denied when scanning package at '%s'
+
+# error.configNotFound
+
+Config file not found at '%s'
+
+# error.notInPackageDir
+
+Current directory is not an initialized Data Code Extension package
+
+# error.scanExecutionFailed
+
+Failed to scan package at '%s': %s
+
+# actions.scanPermissionDenied
+
+- Check that you have read permissions for the directory
+- Verify all Python files are readable
+- Ensure the config file is writable
+
+# actions.configNotFound
+
+- Verify the config file path is correct
+- Check if you're in the right directory
+- Run 'init' command first if package is not initialized
+- Use default config path: payload/config.json
+
+# actions.notInPackageDir
+
+- Change to an initialized package directory
+- Run 'data-code-extension init' first to initialize a package
+- Check that config.json exists in the payload directory
+
+# actions.scanExecutionFailed
+
+- Verify the datacustomcode binary is properly installed
+- Check that the package directory contains valid Python files
+- Run 'datacustomcode version' to verify the binary works
+- Check the error message for specific issues
