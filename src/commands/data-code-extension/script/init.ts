@@ -5,7 +5,7 @@ import { PipChecker, type PipPackageInfo } from '../../../utils/pipChecker.js';
 import { DatacodeBinaryChecker, type DatacodeBinaryInfo, type DatacodeInitExecutionResult } from '../../../utils/datacodeBinaryChecker.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('data-code-extension', 'data-code-extension.init');
+const messages = Messages.loadMessages('data-code-extension', 'init.script');
 
 export type InitResult = {
   success: boolean;
@@ -19,6 +19,22 @@ export type InitResult = {
 };
 
 export default class Init extends SfCommand<InitResult> {
+  // Override baseFlags to hide global flags
+  public static readonly baseFlags = {
+    ...SfCommand.baseFlags,
+    'flags-dir': Flags.directory({
+      summary: 'Import flag values from a directory.',
+      helpGroup: 'GLOBAL',
+      hidden: true,  // Hide from help output
+    }),
+    // eslint-disable-next-line sf-plugin/no-json-flag
+    json: Flags.boolean({
+      summary: 'Format output as json.',
+      helpGroup: 'GLOBAL',
+      hidden: true,  // Hide from help output
+    }),
+  };
+
   public static readonly summary = messages.getMessage('summary');
   public static readonly description = messages.getMessage('description');
   public static readonly examples = messages.getMessages('examples');

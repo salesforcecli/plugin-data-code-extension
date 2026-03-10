@@ -10,6 +10,22 @@ export type HelloWorldResult = {
 };
 
 export default class World extends SfCommand<HelloWorldResult> {
+  // Override baseFlags to hide global flags
+  public static readonly baseFlags = {
+    ...SfCommand.baseFlags,
+    'flags-dir': Flags.directory({
+      summary: 'Import flag values from a directory.',
+      helpGroup: 'GLOBAL',
+      hidden: true,  // Hide from help output
+    }),
+    // eslint-disable-next-line sf-plugin/no-json-flag
+    json: Flags.boolean({
+      summary: 'Format output as json.',
+      helpGroup: 'GLOBAL',
+      hidden: true,  // Hide from help output
+    }),
+  };
+
   public static readonly summary = messages.getMessage('summary');
   public static readonly description = messages.getMessage('description');
   public static readonly examples = messages.getMessages('examples');

@@ -1,16 +1,12 @@
 # summary
 
-Initialize the Data Code Extension environment.
+Initialize the Data Code Extension function package
 
 # description
 
 Initializes the Data Code Extension by checking system requirements and setting up the necessary environment.
 
 # examples
-
-- Initialize a script-based Data Cloud package:
-
-  <%= config.bin %> data-code-extension script init --package-dir ./my-script-package
 
 - Initialize a function-based Data Cloud package:
 
