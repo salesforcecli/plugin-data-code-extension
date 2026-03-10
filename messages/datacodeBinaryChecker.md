@@ -100,3 +100,54 @@ Failed to scan package at '%s': %s
 - Check that the package directory contains valid Python files
 - Run 'datacustomcode version' to verify the binary works
 - Check the error message for specific issues
+
+# error.zipPermissionDenied
+
+Permission denied when creating archive for package at '%s'
+
+# error.packageDirNotFound
+
+Package directory not found at '%s'
+
+# error.notInitializedPackage
+
+Directory '%s' is not an initialized Data Code Extension package
+
+# error.insufficientDiskSpace
+
+Insufficient disk space to create archive
+
+# error.zipExecutionFailed
+
+Failed to create archive for package at '%s': %s
+
+# actions.zipPermissionDenied
+
+- Check that you have read permissions for the package directory
+- Verify you have write permissions for the output location
+- Ensure all files in the package are readable
+
+# actions.packageDirNotFound
+
+- Verify the package directory path is correct
+- Check that the directory exists
+- Run 'init' command first to create a package
+
+# actions.notInitializedPackage
+
+- Ensure the directory contains a valid package structure
+- Check for config.json in the payload directory
+- Run 'init' command first to initialize the package
+
+# actions.insufficientDiskSpace
+
+- Free up disk space on your system
+- Use a different output location with more space
+- Remove unnecessary files or archives
+
+# actions.zipExecutionFailed
+
+- Verify the datacustomcode binary is properly installed
+- Check that the package directory is valid
+- Run 'datacustomcode version' to verify the binary works
+- Check the error message for specific issues

@@ -32,6 +32,14 @@ export type DatacodeScanExecutionResult = {
   filesScanned?: string[];
 };
 
+export type DatacodeZipExecutionResult = {
+  stdout: string;
+  stderr: string;
+  archivePath?: string;
+  fileCount?: number;
+  archiveSize?: string;
+};
+
 export type ScanResult = {
   success: boolean;
   pythonVersion: PythonVersionInfo;
@@ -245,6 +253,110 @@ export class DatacodeBinaryChecker {
         messages.getMessage('error.scanExecutionFailed', [workingDir, errorMessage]),
         'ScanExecutionFailed',
         messages.getMessages('actions.scanExecutionFailed')
+      );
+    }
+  }
+
+  /**
+   * Executes datacustomcode zip with the specified parameters.
+   *
+   * @param packageDir The directory containing the initialized package to zip
+   * @param network Optional network configuration for Jupyter notebooks
+   * @returns Execution result with stdout, stderr, and archive information
+   * @throws SfError if execution fails
+   */
+  public static async executeBinaryZip(
+    packageDir: string,
+    network?: string
+  ): Promise<DatacodeZipExecutionResult> {
+    // Build the command with optional network flag
+    let command = 'datacustomcode zip';
+
+    // Add network flag if provided (before positional argument)
+    if (network) {
+      command += ` --network "${network}"`;
+    }
+
+    // Add package directory as positional argument (with proper quoting for paths with spaces)
+    command += ` "${packageDir}"`;
+
+    try {
+      const { stdout, stderr } = await execAsync(command, {
+        timeout: 120_000, // 120 second timeout (zipping can take time for large packages)
+      });
+
+      // Parse archive path from output
+      let archivePath: string | undefined;
+      const archivePathPattern = /Archive created: (.+\.zip)/i;
+      const archiveMatch = archivePathPattern.exec(stdout);
+      if (archiveMatch) {
+        archivePath = archiveMatch[1].trim();
+      }
+
+      // Parse file count from output
+      let fileCount: number | undefined;
+      const fileCountPattern = /(\d+) files? (?:added|included|archived)/i;
+      const countMatch = fileCountPattern.exec(stdout);
+      if (countMatch) {
+        fileCount = parseInt(countMatch[1], 10);
+      }
+
+      // Parse archive size from output
+      let archiveSize: string | undefined;
+      const sizePattern = /Archive size: (.+)/i;
+      const sizeMatch = sizePattern.exec(stdout);
+      if (sizeMatch) {
+        archiveSize = sizeMatch[1].trim();
+      }
+
+      return {
+        stdout: stdout.trim(),
+        stderr: stderr.trim(),
+        archivePath,
+        fileCount,
+        archiveSize,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      // Check for specific error patterns
+      if (errorMessage.includes('Permission denied')) {
+        throw new SfError(
+          messages.getMessage('error.zipPermissionDenied', [packageDir]),
+          'ZipPermissionDenied',
+          messages.getMessages('actions.zipPermissionDenied')
+        );
+      }
+
+      if (errorMessage.includes('not found') || errorMessage.includes('does not exist')) {
+        throw new SfError(
+          messages.getMessage('error.packageDirNotFound', [packageDir]),
+          'PackageDirNotFound',
+          messages.getMessages('actions.packageDirNotFound')
+        );
+      }
+
+      if (errorMessage.includes('not initialized') || errorMessage.includes('config.json')) {
+        throw new SfError(
+          messages.getMessage('error.notInitializedPackage', [packageDir]),
+          'NotInitializedPackage',
+          messages.getMessages('actions.notInitializedPackage')
+        );
+      }
+
+      if (errorMessage.includes('disk space') || errorMessage.includes('No space left')) {
+        throw new SfError(
+          messages.getMessage('error.insufficientDiskSpace'),
+          'InsufficientDiskSpace',
+          messages.getMessages('actions.insufficientDiskSpace')
+        );
+      }
+
+      // Generic execution error
+      throw new SfError(
+        messages.getMessage('error.zipExecutionFailed', [packageDir, errorMessage]),
+        'ZipExecutionFailed',
+        messages.getMessages('actions.zipExecutionFailed')
       );
     }
   }
