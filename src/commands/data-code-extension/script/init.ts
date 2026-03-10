@@ -2,7 +2,7 @@ import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { PythonChecker, type PythonVersionInfo } from '../../../utils/pythonChecker.js';
 import { PipChecker, type PipPackageInfo } from '../../../utils/pipChecker.js';
-import { DatacodeBinaryChecker, type DatacodeBinaryInfo } from '../../../utils/datacodeBinaryChecker.js';
+import { DatacodeBinaryChecker, type DatacodeBinaryInfo, type DatacodeInitExecutionResult } from '../../../utils/datacodeBinaryChecker.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('data-code-extension', 'data-code-extension.init');
@@ -15,6 +15,7 @@ export type InitResult = {
   codeType: 'script' | 'function';
   packageDir: string;
   message: string;
+  executionResult?: DatacodeInitExecutionResult;
 };
 
 export default class Init extends SfCommand<InitResult> {
@@ -60,7 +61,22 @@ export default class Init extends SfCommand<InitResult> {
       this.spinner.stop();
       this.log(messages.getMessage('info.binaryFound', [binaryInfo.version]));
 
-      this.log(messages.getMessage('info.initSuccess'));
+      // Execute datacustomcode init
+      this.spinner.start(messages.getMessage('info.executingInit'));
+      const executionResult = await DatacodeBinaryChecker.executeBinaryInit(
+        codeType,
+        packageDir
+      );
+
+      this.spinner.stop();
+      this.log(messages.getMessage('info.initExecuted', [packageDir]));
+
+      // Log created files if available
+      if (executionResult.filesCreated && executionResult.filesCreated.length > 0) {
+        executionResult.filesCreated.forEach(file => {
+          this.log(messages.getMessage('info.fileCreated', [file]));
+        });
+      }
 
       return {
         success: true,
@@ -69,7 +85,8 @@ export default class Init extends SfCommand<InitResult> {
         binaryInfo,
         codeType,
         packageDir,
-        message: messages.getMessage('info.initSuccess'),
+        executionResult,
+        message: messages.getMessage('info.initCompleted'),
       };
     } catch (error) {
       this.spinner.stop();

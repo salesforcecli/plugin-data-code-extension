@@ -27,3 +27,34 @@ The 'datacustomcode' command was found but failed to execute properly.
 - Try running with full path if known: /path/to/datacustomcode version
 - If using a virtual environment, ensure it's activated
 - Check for any error messages when running: datacustomcode version
+
+# error.initPermissionDenied
+
+Permission denied when creating package at '%s'
+
+# error.initDirectoryExists
+
+Directory '%s' already exists and is not empty
+
+# error.initExecutionFailed
+
+Failed to initialize package at '%s': %s
+
+# actions.initPermissionDenied
+
+- Check that you have write permissions for the directory
+- Try running the command with appropriate permissions
+- Ensure the parent directory exists
+
+# actions.initDirectoryExists
+
+- Choose a different directory name
+- Remove or rename the existing directory
+- Use --force flag to overwrite (if supported)
+
+# actions.initExecutionFailed
+
+- Verify the datacustomcode binary is properly installed
+- Check that all required dependencies are installed
+- Run 'datacustomcode version' to verify the binary works
+- Check the error message for specific issues

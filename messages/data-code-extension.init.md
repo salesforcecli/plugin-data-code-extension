@@ -40,6 +40,22 @@ Checking datacustomcode binary...
 
 Datacustomcode binary version %s found
 
+# info.executingInit
+
+Initializing Data Cloud package...
+
+# info.initExecuted
+
+Package initialized successfully at '%s'
+
+# info.fileCreated
+
+  Created: %s
+
+# info.initCompleted
+
+Data Cloud package initialized and ready for development!
+
 # info.initSuccess
 
 Data Code Extension initialized successfully!

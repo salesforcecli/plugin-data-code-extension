@@ -44,6 +44,18 @@ describe('data-code-extension init commands', () => {
         // path is optional
       }
 
+      // Check execution result if present (when all prerequisites are met)
+      if (result.executionResult) {
+        expect(result.executionResult).to.have.property('stdout');
+        expect(result.executionResult).to.have.property('stderr');
+        expect(result.executionResult).to.have.property('projectPath');
+        expect(result.executionResult.projectPath).to.equal('./test-dir');
+        // filesCreated is optional but should be an array if present
+        if (result.executionResult.filesCreated) {
+          expect(result.executionResult.filesCreated).to.be.an('array');
+        }
+      }
+
       expect(result.message).to.include('successfully');
 
       // Check that appropriate messages were logged
@@ -64,12 +76,17 @@ describe('data-code-extension init commands', () => {
         expect(output).to.include('Datacustomcode binary');
       }
 
+      // Check for execution-related messages if execution happened
+      if (result.executionResult) {
+        expect(output).to.include('Package initialized successfully');
+      }
+
       expect(output).to.include('successfully');
     } catch (error) {
-      // If Python 3.11+ is not installed, pip package is missing, or binary is not found, verify the error is handled correctly
+      // If Python 3.11+ is not installed, pip package is missing, binary is not found, or init fails, verify the error is handled correctly
       expect(error).to.have.property('name');
       if (error instanceof Error) {
-        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable']);
+        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable', 'InitPermissionDenied', 'InitDirectoryExists', 'InitExecutionFailed']);
         expect(error.message).to.be.a('string');
         if ('actions' in error && error.actions) {
           expect(error.actions).to.be.an('array');
@@ -107,7 +124,7 @@ describe('data-code-extension init commands', () => {
     } catch (error) {
       // Handle case where Python is not installed
       if (error instanceof Error) {
-        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable']);
+        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable', 'InitPermissionDenied', 'InitDirectoryExists', 'InitExecutionFailed']);
       }
     }
   });
@@ -120,7 +137,7 @@ describe('data-code-extension init commands', () => {
     } catch (error) {
       // Handle case where Python is not installed
       if (error instanceof Error) {
-        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable']);
+        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable', 'InitPermissionDenied', 'InitDirectoryExists', 'InitExecutionFailed']);
       }
     }
   });
@@ -133,7 +150,7 @@ describe('data-code-extension init commands', () => {
     } catch (error) {
       // Handle case where Python is not installed
       if (error instanceof Error) {
-        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable']);
+        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable', 'InitPermissionDenied', 'InitDirectoryExists', 'InitExecutionFailed']);
       }
     }
   });

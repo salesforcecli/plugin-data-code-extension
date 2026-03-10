@@ -14,6 +14,13 @@ export type DatacodeBinaryInfo = {
   path?: string;
 };
 
+export type DatacodeInitExecutionResult = {
+  stdout: string;
+  stderr: string;
+  filesCreated?: string[];
+  projectPath: string;
+};
+
 export class DatacodeBinaryChecker {
   /**
    * Checks if the datacustomcode binary is installed and accessible.
@@ -49,6 +56,68 @@ export class DatacodeBinaryChecker {
       'BinaryNotExecutable',
       messages.getMessages('actions.binaryNotExecutable')
     );
+  }
+
+  /**
+   * Executes datacustomcode init with the specified parameters.
+   *
+   * @param codeType The type of code package to initialize
+   * @param packageDir The directory to initialize the package in
+   * @returns Execution result with stdout, stderr, and parsed file list
+   * @throws SfError if execution fails
+   */
+  public static async executeBinaryInit(
+    codeType: 'script' | 'function',
+    packageDir: string
+  ): Promise<DatacodeInitExecutionResult> {
+    const command = `datacustomcode init --code-type ${codeType} ${packageDir}`;
+
+    try {
+      const { stdout, stderr } = await execAsync(command, {
+        timeout: 30000, // 30 second timeout
+      });
+
+      // Parse created files from output if available
+      const filesCreated: string[] = [];
+      const filePattern = /Created (?:file|directory): (.+)/g;
+      let match;
+      while ((match = filePattern.exec(stdout)) !== null) {
+        filesCreated.push(match[1]);
+      }
+
+      return {
+        stdout: stdout.trim(),
+        stderr: stderr.trim(),
+        filesCreated,
+        projectPath: packageDir,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      // Check for specific error patterns
+      if (errorMessage.includes('Permission denied')) {
+        throw new SfError(
+          messages.getMessage('error.initPermissionDenied', [packageDir]),
+          'InitPermissionDenied',
+          messages.getMessages('actions.initPermissionDenied')
+        );
+      }
+
+      if (errorMessage.includes('already exists')) {
+        throw new SfError(
+          messages.getMessage('error.initDirectoryExists', [packageDir]),
+          'InitDirectoryExists',
+          messages.getMessages('actions.initDirectoryExists')
+        );
+      }
+
+      // Generic execution error
+      throw new SfError(
+        messages.getMessage('error.initExecutionFailed', [packageDir, errorMessage]),
+        'InitExecutionFailed',
+        messages.getMessages('actions.initExecutionFailed')
+      );
+    }
   }
 
   /**
