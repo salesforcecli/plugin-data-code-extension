@@ -179,7 +179,8 @@ export class DatacodeBinaryChecker {
     workingDir: string,
     config?: string,
     dryRun: boolean = false,
-    noRequirements: boolean = false
+    noRequirements: boolean = false,
+    configFile?: string
   ): Promise<DatacodeScanExecutionResult> {
     // Build the command with optional flags
     let command = 'datacustomcode scan';
@@ -193,7 +194,11 @@ export class DatacodeBinaryChecker {
       command += ' --no-requirements';
     }
 
-    // Add config as positional argument LAST (with proper quoting for paths with spaces)
+    if (configFile) {
+      command += ` --config "${configFile}"`;
+    }
+
+    // Add entrypoint as positional argument LAST (with proper quoting for paths with spaces)
     const configPath = config ?? 'payload/config.json';
     command += ` "${configPath}"`;
 

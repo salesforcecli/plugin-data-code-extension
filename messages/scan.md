@@ -12,9 +12,13 @@ Scans Python files in an initialized Data Code Extension package directory to id
 
   <%= config.bin %> data-code-extension %s scan
 
-- Scan with a custom config file:
+- Scan with a custom entrypoint file:
 
-  <%= config.bin %> data-code-extension %s scan --config custom-config.json
+  <%= config.bin %> data-code-extension %s scan --entrypoint my_script.py
+
+- Scan with an alternate config file:
+
+  <%= config.bin %> data-code-extension %s scan --config alternate-config.json
 
 - Perform a dry run to see what would be changed:
 
@@ -128,9 +132,17 @@ Failed to scan package at '%s': %s
 
 # flags.config.summary
 
-Path to the config.json file to update.
+Path to an alternate config file.
 
 # flags.config.description
+
+Optional path to an alternate JSON config file to use instead of the package's default config. The file must exist. Useful for testing different configurations without modifying the package's primary config.json.
+
+# flags.entrypoint.summary
+
+Path to the config.json file to update.
+
+# flags.entrypoint.description
 
 The path to the config.json file that will be analyzed and updated with discovered permissions. Defaults to 'payload/config.json' in the current directory.
 

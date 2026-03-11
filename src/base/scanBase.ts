@@ -31,7 +31,9 @@ export abstract class ScanBase extends SfCommand<ScanResult> {
 
     // Get flag values
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const config = flags['config'];
+    const config = flags['entrypoint'];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const configFile = flags['config'];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const dryRun = flags['dry-run'] || false;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -71,29 +73,21 @@ export abstract class ScanBase extends SfCommand<ScanResult> {
         config,
         // Cast to boolean to ensure type safety
         Boolean(dryRun),
-        Boolean(noRequirements)
+        Boolean(noRequirements),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        configFile
       );
 
       this.spinner.stop();
       this.log(messages.getMessage('info.scanExecuted', [workingDir]));
 
-      // Log scan results if available
-      if (executionResult.permissions && executionResult.permissions.length > 0) {
-        executionResult.permissions.forEach(permission => {
-          this.log(messages.getMessage('info.permissionFound', [permission]));
-        });
+      // Print the raw binary output so nothing is swallowed
+      if (executionResult.stdout) {
+        this.log(executionResult.stdout);
       }
 
-      if (executionResult.requirements && executionResult.requirements.length > 0) {
-        executionResult.requirements.forEach(requirement => {
-          this.log(messages.getMessage('info.requirementFound', [requirement]));
-        });
-      }
-
-      if (executionResult.filesScanned && executionResult.filesScanned.length > 0) {
-        executionResult.filesScanned.forEach(file => {
-          this.log(messages.getMessage('info.fileScanned', [file]));
-        });
+      if (executionResult.stderr) {
+        this.warn(executionResult.stderr);
       }
 
       // Show dry run notice if applicable

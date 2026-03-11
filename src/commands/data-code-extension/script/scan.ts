@@ -14,11 +14,18 @@ export default class Scan extends ScanBase {
   );
 
   public static readonly flags = {
-    'config': Flags.string({
+    'entrypoint': Flags.string({
+      char: 'e',
+      summary: messages.getMessage('flags.entrypoint.summary'),
+      description: messages.getMessage('flags.entrypoint.description'),
+      required: false,
+    }),
+    'config': Flags.file({
       char: 'c',
       summary: messages.getMessage('flags.config.summary'),
       description: messages.getMessage('flags.config.description'),
       required: false,
+      exists: true,
     }),
     'dry-run': Flags.boolean({
       char: 'd',
