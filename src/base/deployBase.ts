@@ -75,6 +75,8 @@ export abstract class DeployBase extends SfCommand<DeployResult> {
     const cpuSize = flags['cpu-size'] || 'CPU_2XL';
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const network = flags['network'];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const profile = flags['profile'];
 
     // Get additional flags from subclass (for function-specific flags)
     const additionalFlags = this.getAdditionalFlags();
@@ -134,26 +136,22 @@ export abstract class DeployBase extends SfCommand<DeployResult> {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         network,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        additionalFlags.functionInvokeOpt as string | undefined
+        additionalFlags.functionInvokeOpt as string | undefined,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        profile
       );
 
       this.spinner.stop();
       this.log(messages.getMessage('info.deploymentComplete', [name, version]));
 
-      // Log deployment details if available
-      if (executionResult.deploymentId) {
-        this.log(messages.getMessage('info.deploymentId', [executionResult.deploymentId]));
+      if (executionResult.stdout) {
+        this.log(executionResult.stdout);
       }
 
-      if (executionResult.endpointUrl) {
-        this.log(messages.getMessage('info.endpointUrl', [executionResult.endpointUrl]));
+      if (executionResult.stderr) {
+        this.warn(executionResult.stderr);
       }
 
-      if (executionResult.status) {
-        this.log(messages.getMessage('info.deploymentStatus', [executionResult.status]));
-      }
-
-      // Log success message
       this.log(messages.getMessage('info.deploySuccess'));
 
       return {

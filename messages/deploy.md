@@ -136,6 +136,14 @@ Target Salesforce org for deployment.
 
 The alias of the Salesforce org where you want to deploy the Data Cloud custom code package. The org must have Data Cloud enabled and appropriate permissions.
 
+# flags.profile.summary
+
+Profile to use for the deployment.
+
+# flags.profile.description
+
+Optional profile name to select a specific configuration profile defined in the package for this deployment.
+
 # flags.functionInvokeOpt.summary
 
 Function invocation option (function packages only).

@@ -403,7 +403,8 @@ export class DatacodeBinaryChecker {
     targetOrg: string,
     cpuSize: string,
     network?: string,
-    functionInvokeOpt?: string
+    functionInvokeOpt?: string,
+    profile?: string
   ): Promise<DatacodeDeployExecutionResult> {
     // Build the command with required and optional flags
     let command = 'datacustomcode deploy';
@@ -420,6 +421,10 @@ export class DatacodeBinaryChecker {
 
     if (functionInvokeOpt) {
       command += ` --function-invoke-opt "${functionInvokeOpt}"`;
+    }
+
+    if (profile) {
+      command += ` --profile "${profile}"`;
     }
 
     try {

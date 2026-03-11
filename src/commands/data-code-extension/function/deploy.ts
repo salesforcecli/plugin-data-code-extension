@@ -45,7 +45,6 @@ export default class Deploy extends DeployBase {
       exists: true,
     }),
     'cpu-size': Flags.string({
-      char: 'c',
       summary: messages.getMessage('flags.cpuSize.summary'),
       description: messages.getMessage('flags.cpuSize.description'),
       options: ['CPU_L', 'CPU_XL', 'CPU_2XL', 'CPU_4XL'],
@@ -56,6 +55,11 @@ export default class Deploy extends DeployBase {
       summary: messages.getMessage('flags.targetOrg.summary'),
       description: messages.getMessage('flags.targetOrg.description'),
       required: true,
+    }),
+    'profile': Flags.string({
+      summary: messages.getMessage('flags.profile.summary'),
+      description: messages.getMessage('flags.profile.description'),
+      required: false,
     }),
     // Function-specific flag
     'function-invoke-opt': Flags.string({
