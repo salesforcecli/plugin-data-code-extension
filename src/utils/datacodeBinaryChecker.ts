@@ -48,6 +48,13 @@ export type DatacodeDeployExecutionResult = {
   status?: string;
 };
 
+export type DatacodeRunExecutionResult = {
+  stdout: string;
+  stderr: string;
+  status?: string;
+  output?: string;
+};
+
 export type ScanResult = {
   success: boolean;
   pythonVersion: PythonVersionInfo;
@@ -495,6 +502,105 @@ export class DatacodeBinaryChecker {
         messages.getMessage('error.deployExecutionFailed', [name, errorMessage]),
         'DeployExecutionFailed',
         messages.getMessages('actions.deployExecutionFailed')
+      );
+    }
+  }
+
+  /**
+   * Executes datacustomcode run with the specified parameters.
+   *
+   * @param packageDir The package directory (positional argument)
+   * @param targetOrg The target Salesforce org username/alias
+   * @param configFile Optional path to a config file
+   * @param dependencies Optional dependencies override
+   * @param profile Optional profile name
+   * @returns Execution result with stdout, stderr, and parsed run output
+   * @throws SfError if execution fails
+   */
+  public static async executeBinaryRun(
+    packageDir: string,
+    targetOrg: string,
+    configFile?: string,
+    dependencies?: string,
+    profile?: string
+  ): Promise<DatacodeRunExecutionResult> {
+    // Build the command — flags before the positional argument
+    let command = 'datacustomcode run';
+    command += ` --sf-cli-org "${targetOrg}"`;
+
+    if (configFile) {
+      command += ` --config-file "${configFile}"`;
+    }
+
+    if (dependencies) {
+      command += ` --dependencies "${dependencies}"`;
+    }
+
+    if (profile) {
+      command += ` --profile "${profile}"`;
+    }
+
+    command += ` "${packageDir}"`;
+
+    try {
+      const { stdout, stderr } = await execAsync(command, {
+        timeout: 300_000, // 5 minute timeout
+      });
+
+      // Parse status from output
+      let status: string | undefined;
+      const statusPattern = /Status: (.+)/i;
+      const statusMatch = statusPattern.exec(stdout);
+      if (statusMatch) {
+        status = statusMatch[1].trim();
+      }
+
+      // Parse run output from output
+      let output: string | undefined;
+      const outputPattern = /Output: (.+)/i;
+      const outputMatch = outputPattern.exec(stdout);
+      if (outputMatch) {
+        output = outputMatch[1].trim();
+      }
+
+      return {
+        stdout: stdout.trim(),
+        stderr: stderr.trim(),
+        status,
+        output,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      if (errorMessage.includes('Authentication failed') || errorMessage.includes('Invalid credentials')) {
+        throw new SfError(
+          messages.getMessage('error.runAuthenticationFailed', [targetOrg]),
+          'RunAuthenticationFailed',
+          messages.getMessages('actions.runAuthenticationFailed')
+        );
+      }
+
+      if (errorMessage.includes('not found') || errorMessage.includes('does not exist')) {
+        throw new SfError(
+          messages.getMessage('error.runPackageDirNotFound', [packageDir]),
+          'RunPackageDirNotFound',
+          messages.getMessages('actions.runPackageDirNotFound')
+        );
+      }
+
+      if (errorMessage.includes('config') && errorMessage.includes('not found')) {
+        throw new SfError(
+          messages.getMessage('error.runConfigNotFound', [configFile ?? '']),
+          'RunConfigNotFound',
+          messages.getMessages('actions.runConfigNotFound')
+        );
+      }
+
+      // Generic execution error
+      throw new SfError(
+        messages.getMessage('error.runExecutionFailed', [packageDir, errorMessage]),
+        'RunExecutionFailed',
+        messages.getMessages('actions.runExecutionFailed')
       );
     }
   }
