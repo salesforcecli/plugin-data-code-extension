@@ -95,7 +95,7 @@ To use your plugin, run using the local `./bin/dev` or `./bin/dev.cmd` file.
 
 ```bash
 # Run using local run file.
-./bin/dev hello world
+bin/dev.js data-code-extension --help
 ```
 
 There should be no differences when running via the Salesforce CLI or using the local run file. However, it can be useful to link the plugin to do some additional testing or run your commands from anywhere on your machine.
@@ -112,7 +112,6 @@ sf plugins
 <!-- commands -->
 * [`sf data-code-extension function init`](#sf-data-code-extension-function-init)
 * [`sf data-code-extension script init`](#sf-data-code-extension-script-init)
-* [`sf hello world`](#sf-hello-world)
 
 ## `sf data-code-extension function init`
 
@@ -184,40 +183,5 @@ FLAG DESCRIPTIONS
 
     The directory path where the new package will be initialized.
     The directory will be created if it does not exist.
-```
-
-## `sf hello world`
-
-Say hello.
-
-```
-USAGE
-  $ sf hello world [--json] [--flags-dir <value>] [-n <value>]
-
-FLAGS
-  -n, --name=<value>  [default: World] The name of the person you'd like to say hello to.
-
-GLOBAL FLAGS
-  --flags-dir=<value>  Import flag values from a directory.
-  --json               Format output as json.
-
-DESCRIPTION
-  Say hello.
-
-  Say hello either to the world or someone you know.
-
-EXAMPLES
-  Say hello to the world:
-
-    $ sf hello world
-
-  Say hello to someone you know:
-
-    $ sf hello world --name Astro
-
-FLAG DESCRIPTIONS
-  -n, --name=<value>  The name of the person you'd like to say hello to.
-
-    This person can be anyone in the world!
 ```
 <!-- commandsstop -->
