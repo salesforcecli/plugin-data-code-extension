@@ -18,7 +18,7 @@ Scans Python files in an initialized Data Code Extension package directory to id
 
 - Scan with an alternate config file:
 
-  <%= config.bin %> data-code-extension %s scan --config alternate-config.json
+  <%= config.bin %> data-code-extension %s scan --config-file alternate-config.json
 
 - Perform a dry run to see what would be changed:
 
@@ -130,11 +130,11 @@ Failed to scan package at '%s': %s
 - Run 'datacustomcode version' to verify the binary works
 - Check the error message for specific issues
 
-# flags.config.summary
+# flags.configFile.summary
 
 Path to an alternate config file.
 
-# flags.config.description
+# flags.configFile.description
 
 Optional path to an alternate JSON config file to use instead of the package's default config. The file must exist. Useful for testing different configurations without modifying the package's primary config.json.
 

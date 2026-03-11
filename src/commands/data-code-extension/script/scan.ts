@@ -20,10 +20,9 @@ export default class Scan extends ScanBase {
       description: messages.getMessage('flags.entrypoint.description'),
       required: false,
     }),
-    'config': Flags.file({
-      char: 'c',
-      summary: messages.getMessage('flags.config.summary'),
-      description: messages.getMessage('flags.config.description'),
+    'config-file': Flags.file({
+      summary: messages.getMessage('flags.configFile.summary'),
+      description: messages.getMessage('flags.configFile.description'),
       required: false,
       exists: true,
     }),

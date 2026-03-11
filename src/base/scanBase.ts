@@ -33,7 +33,7 @@ export abstract class ScanBase extends SfCommand<ScanResult> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const config = flags['entrypoint'];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const configFile = flags['config'];
+    const configFile = flags['config-file'];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const dryRun = flags['dry-run'] || false;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
