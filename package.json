@@ -191,5 +191,6 @@
   },
   "exports": "./lib/index.js",
   "type": "module",
-  "author": "cdp-byoc@salesforce.com"
+  "author": "cdp-byoc@salesforce.com",
+  "packageManager": "yarn@4.13.0"
 }

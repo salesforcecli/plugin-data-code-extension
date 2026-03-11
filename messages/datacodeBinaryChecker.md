@@ -217,3 +217,45 @@ Failed to deploy package '%s': %s
 - Check the datacustomcode binary is properly installed
 - Review the error message for specific issues
 - Ensure the package is properly initialized and zipped
+
+# error.runAuthenticationFailed
+
+Failed to authenticate with Salesforce org '%s'
+
+# error.runPackageDirNotFound
+
+Entrypoint file not found at '%s'
+
+# error.runConfigNotFound
+
+Config file not found at '%s'
+
+# error.runExecutionFailed
+
+Failed to run package at '%s': %s
+
+# actions.runAuthenticationFailed
+
+- Verify the target org username/alias is correct
+- Re-authenticate with 'sf org login web' or 'sf org login sfdx-url'
+- Check that the org has the necessary permissions
+- Ensure the org has Data Cloud enabled
+
+# actions.runPackageDirNotFound
+
+- Verify the entrypoint file path is correct
+- Check that the file exists
+- Run 'init' command first to create a package
+
+# actions.runConfigNotFound
+
+- Verify the config file path is correct
+- Check if you're in the right directory
+- Use the default config path: payload/config.json
+
+# actions.runExecutionFailed
+
+- Verify all required flags are provided correctly
+- Check the datacustomcode binary is properly installed
+- Review the error message for specific issues
+- Ensure the package is properly initialized

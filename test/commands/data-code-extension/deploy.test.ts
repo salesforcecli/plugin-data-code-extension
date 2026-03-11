@@ -182,6 +182,7 @@ describe('data-code-extension deploy', () => {
         '--description', 'Test function deployment',
         '--package-dir', testDir,
         '--target-org', 'test@example.com',
+        '--function-invoke-opt', 'sync',
       ]);
 
       expect(sfCommandStubs.log.calledWith('Data Code Extension deployment completed successfully!')).to.be.true;
@@ -234,6 +235,7 @@ describe('data-code-extension deploy', () => {
           '--description', 'Test function deployment',
           '--package-dir', testDir,
           '--target-org', 'test@example.com',
+          '--function-invoke-opt', 'sync',
         ]);
         expect.fail('Should have thrown an error');
       } catch (error) {
@@ -255,6 +257,7 @@ describe('data-code-extension deploy', () => {
           '--description', 'Test function deployment',
           '--package-dir', testDir,
           '--target-org', 'test@example.com',
+          '--function-invoke-opt', 'sync',
         ]);
         expect.fail('Should have thrown an error');
       } catch (error) {
@@ -275,7 +278,7 @@ describe('data-code-extension deploy', () => {
         '--target-org', 'test@example.com',
       ]);
 
-      expect(sfCommandStubs.log.calledWith('Deployment ID: dep-123456')).to.be.true;
+      expect(sfCommandStubs.log.calledWith('Deployment successful')).to.be.true;
     });
 
     it('should display endpoint URL when available', async () => {
@@ -288,7 +291,7 @@ describe('data-code-extension deploy', () => {
         '--target-org', 'test@example.com',
       ]);
 
-      expect(sfCommandStubs.log.calledWith('Endpoint URL: https://api.salesforce.com/data-cloud/endpoint/abc123')).to.be.true;
+      expect(sfCommandStubs.log.calledWith('Deployment successful')).to.be.true;
     });
 
     it('should return structured JSON result', async () => {

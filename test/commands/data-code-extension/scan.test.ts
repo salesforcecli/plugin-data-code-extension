@@ -1,3 +1,6 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
 import { TestContext } from '@salesforce/core/testSetup';
 import { expect } from 'chai';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
@@ -11,13 +14,21 @@ import FunctionScan from '../../../src/commands/data-code-extension/function/sca
 describe('data-code-extension scan commands', () => {
   const $$ = new TestContext();
   let sfCommandStubs: ReturnType<typeof stubSfCommandUx>;
+  let testDir: string;
+  let tempConfigFile: string;
 
   beforeEach(() => {
     sfCommandStubs = stubSfCommandUx($$.SANDBOX);
+    testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'test-scan-'));
+    tempConfigFile = path.join(testDir, 'config.json');
+    fs.writeFileSync(tempConfigFile, JSON.stringify({}));
   });
 
   afterEach(() => {
     $$.restore();
+    if (testDir && fs.existsSync(testDir)) {
+      fs.rmSync(testDir, { recursive: true, force: true });
+    }
   });
 
   describe('script scan', () => {
@@ -104,9 +115,9 @@ describe('data-code-extension scan commands', () => {
         filesScanned: ['main.py'],
       });
 
-      const result = await ScriptScan.run(['--config', 'custom/config.json']);
+      const result = await ScriptScan.run(['--config-file', tempConfigFile]);
 
-      expect(scanStub.calledWith(process.cwd(), 'custom/config.json', false, false)).to.be.true;
+      expect(scanStub.calledWith(process.cwd(), undefined, false, false, tempConfigFile)).to.be.true;
       expect(result.success).to.be.true;
     });
 
@@ -225,9 +236,9 @@ describe('data-code-extension scan commands', () => {
         filesScanned: ['main.py'],
       });
 
-      const result = await ScriptScan.run(['--config', 'test.json', '--dry-run', '--no-requirements']);
+      const result = await ScriptScan.run(['--config-file', tempConfigFile, '--dry-run', '--no-requirements']);
 
-      expect(scanStub.calledWith(process.cwd(), 'test.json', true, true)).to.be.true;
+      expect(scanStub.calledWith(process.cwd(), undefined, true, true, tempConfigFile)).to.be.true;
       expect(result.success).to.be.true;
     });
 
@@ -299,11 +310,11 @@ describe('data-code-extension scan commands', () => {
 
       // Mock the scan execution to throw error
       $$.SANDBOX.stub(DatacodeBinaryChecker, 'executeBinaryScan').rejects(
-        new SfError('Config file not found at custom/config.json', 'ConfigNotFound')
+        new SfError(`Config file not found at ${tempConfigFile}`, 'ConfigNotFound')
       );
 
       try {
-        await ScriptScan.run(['--config', 'custom/config.json']);
+        await ScriptScan.run(['--config-file', tempConfigFile]);
         expect.fail('Should have thrown an error');
       } catch (error) {
         expect(error).to.be.instanceOf(SfError);
