@@ -65,7 +65,7 @@ export default class Deploy extends DeployBase {
     'function-invoke-opt': Flags.string({
       summary: messages.getMessage('flags.functionInvokeOpt.summary'),
       description: messages.getMessage('flags.functionInvokeOpt.description'),
-      required: false,
+      required: true,
     }),
   };
 

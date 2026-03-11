@@ -150,4 +150,4 @@ Function invocation option (function packages only).
 
 # flags.functionInvokeOpt.description
 
-Optional configuration for how functions should be invoked. This flag only applies to function-type packages and allows you to specify invocation behavior such as 'sync' or 'async'. Not applicable to script packages.
+Configuration for how functions should be invoked. UnstructuredChunking is only valid option at this point
