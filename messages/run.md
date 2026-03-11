@@ -10,15 +10,15 @@ Executes an initialized Data Cloud custom code package against a Salesforce org.
 
 - Run a %s package against the default org:
 
-  <%= config.bin %> data-code-extension %s run --package-dir ./my-package --target-org myorg
+  <%= config.bin %> data-code-extension %s run --entrypoint ./my-package --target-org myorg
 
 - Run with a custom config file:
 
-  <%= config.bin %> data-code-extension %s run --package-dir ./my-package --target-org myorg --config-file ./payload/config.json
+  <%= config.bin %> data-code-extension %s run --entrypoint ./my-package --target-org myorg --config-file ./payload/config.json
 
 - Run with dependencies and a profile:
 
-  <%= config.bin %> data-code-extension %s run --package-dir ./my-package --target-org myorg --dependencies "pandas==2.0.0" --profile dev
+  <%= config.bin %> data-code-extension %s run --entrypoint ./my-package --target-org myorg --dependencies "pandas==2.0.0" --profile dev
 
 # info.checkingPython
 
@@ -76,13 +76,13 @@ Data Code Extension run completed successfully!
 
 Failed to run Data Code Extension package
 
-# flags.packageDir.summary
+# flags.entrypoint.summary
 
-Directory containing the package to run.
+Entrypoint file for the package to run.
 
-# flags.packageDir.description
+# flags.entrypoint.description
 
-The path to the directory containing your initialized Data Cloud custom code package. This directory should contain the package files created by the 'init' command.
+The path to the entrypoint file of your initialized Data Cloud custom code package.
 
 # flags.targetOrg.summary
 

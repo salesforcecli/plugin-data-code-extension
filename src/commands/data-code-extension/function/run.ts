@@ -14,10 +14,10 @@ export default class Run extends RunBase {
   );
 
   public static readonly flags = {
-    'package-dir': Flags.directory({
-      char: 'p',
-      summary: messages.getMessage('flags.packageDir.summary'),
-      description: messages.getMessage('flags.packageDir.description'),
+    'entrypoint': Flags.file({
+      char: 'e',
+      summary: messages.getMessage('flags.entrypoint.summary'),
+      description: messages.getMessage('flags.entrypoint.description'),
       required: true,
       exists: true,
     }),

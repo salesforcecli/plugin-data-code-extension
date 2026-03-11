@@ -44,7 +44,7 @@ export abstract class RunBase extends SfCommand<RunResult> {
     const messages = this.getMessages();
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const packageDir = flags['package-dir'];
+    const packageDir = flags['entrypoint'];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const targetOrg = flags['target-org'];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -108,12 +108,12 @@ export abstract class RunBase extends SfCommand<RunResult> {
       this.spinner.stop();
       this.log(messages.getMessage('info.runComplete', [packageDir]));
 
-      if (executionResult.status) {
-        this.log(messages.getMessage('info.runStatus', [executionResult.status]));
+      if (executionResult.stdout) {
+        this.log(executionResult.stdout);
       }
 
-      if (executionResult.output) {
-        this.log(messages.getMessage('info.runOutput', [executionResult.output]));
+      if (executionResult.stderr) {
+        this.warn(executionResult.stderr);
       }
 
       this.log(messages.getMessage('info.runSuccess'));
