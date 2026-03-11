@@ -78,7 +78,7 @@ The path to the directory containing an initialized Data Code Extension package.
 
 # flags.network.summary
 
-Network configuration for Jupyter notebook packages.
+Network configuration, typically used for Jupyter notebook packages.
 
 # flags.network.description
 
