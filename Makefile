@@ -19,7 +19,7 @@ help:
 all: install unit nuts
 
 install:
-	yarn install --mode=skip-build
+	yarn install
 
 compile: install
 	$(BIN)/tsc -p . --pretty --incremental
