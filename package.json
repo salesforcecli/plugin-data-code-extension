@@ -67,7 +67,7 @@
     "format": "wireit",
     "link-check": "wireit",
     "lint": "wireit",
-    "postinstall": "yarn husky install",
+    "postinstall": "node -e \"const r=require('child_process').spawnSync('./node_modules/.bin/husky',['install'],{stdio:'inherit'});if(r.error&&r.error.code!=='ENOENT')process.exit(1)\"",
     "postpack": "sf-clean --ignore-signing-artifacts",
     "prepack": "sf-prepack",
     "test": "wireit",
