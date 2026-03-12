@@ -1,8 +1,13 @@
+import { existsSync } from 'node:fs';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
-import { Messages } from '@salesforce/core';
+import { Messages, SfError } from '@salesforce/core';
 import { PythonChecker, type PythonVersionInfo } from '../utils/pythonChecker.js';
 import { PipChecker, type PipPackageInfo } from '../utils/pipChecker.js';
-import { DatacodeBinaryChecker, type DatacodeBinaryInfo, type DatacodeZipExecutionResult } from '../utils/datacodeBinaryChecker.js';
+import {
+  DatacodeBinaryChecker,
+  type DatacodeBinaryInfo,
+  type DatacodeZipExecutionResult,
+} from '../utils/datacodeBinaryChecker.js';
 
 export type ZipResult = {
   success: boolean;
@@ -25,13 +30,13 @@ export abstract class ZipBase extends SfCommand<ZipResult> {
     'flags-dir': Flags.directory({
       summary: 'Import flag values from a directory.',
       helpGroup: 'GLOBAL',
-      hidden: false,  // Hide from help output
+      hidden: false, // Hide from help output
     }),
     // eslint-disable-next-line sf-plugin/no-json-flag, sf-plugin/no-hardcoded-messages-flags
     json: Flags.boolean({
       summary: 'Format output as json.',
       helpGroup: 'GLOBAL',
-      hidden: true,  // Hide from help output
+      hidden: true, // Hide from help output
     }),
   };
 
@@ -44,6 +49,15 @@ export abstract class ZipBase extends SfCommand<ZipResult> {
     const packageDir = flags['package-dir'];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const network = flags['network'];
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    if (!existsSync(packageDir)) {
+      throw new SfError(
+        messages.getMessage('error.packageDirNotFound', [packageDir]),
+        'PackageDirNotFound',
+        messages.getMessages('actions.packageDirNotFound')
+      );
+    }
 
     this.spinner.start(messages.getMessage('info.checkingPython'));
 

@@ -64,9 +64,19 @@ Package archive created successfully!
 
 Data Code Extension archive created successfully!
 
+# error.packageDirNotFound
+
+Package directory not found at '%s'
+
 # error.zipFailed
 
 Failed to create Data Code Extension archive
+
+# actions.packageDirNotFound
+
+- Verify the package directory path is correct
+- Check that the directory exists
+- Run 'init' command first to create a package
 
 # flags.packageDir.summary
 
