@@ -71,7 +71,7 @@
     "postpack": "sf-clean --ignore-signing-artifacts",
     "prepack": "sf-prepack",
     "test": "wireit",
-    "test:nuts": "nyc mocha \"**/*.nut.ts\" --slow 4500 --timeout 600000 --parallel",
+    "test:nuts": "node scripts/run-nuts.cjs",
     "test:only": "wireit",
     "version": "oclif readme"
   },
