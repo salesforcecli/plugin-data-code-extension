@@ -1,8 +1,7 @@
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages, Org } from '@salesforce/core';
-import { PythonChecker } from '../utils/pythonChecker.js';
-import { PipChecker } from '../utils/pipChecker.js';
 import { DatacodeBinaryChecker, type DatacodeDeployExecutionResult } from '../utils/datacodeBinaryChecker.js';
+import { checkEnvironment } from '../utils/environmentChecker.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('data-code-extension', 'deploy');
@@ -120,25 +119,12 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
 
     const additionalFlags = this.getAdditionalFlags(flags);
 
-    this.spinner.start(cmdMessages.getMessage('info.checkingPython'));
-
     try {
-      const pythonInfo = await PythonChecker.checkPython311();
-
-      this.spinner.stop();
-      this.log(cmdMessages.getMessage('info.pythonFound', [pythonInfo.version, pythonInfo.command]));
-
-      this.spinner.start(cmdMessages.getMessage('info.checkingPackages'));
-      const packageInfo = await PipChecker.checkPackage('salesforce-data-customcode');
-
-      this.spinner.stop();
-      this.log(cmdMessages.getMessage('info.packageFound', [packageInfo.name, packageInfo.version]));
-
-      this.spinner.start(cmdMessages.getMessage('info.checkingBinary'));
-      const binaryInfo = await DatacodeBinaryChecker.checkBinary();
-
-      this.spinner.stop();
-      this.log(cmdMessages.getMessage('info.binaryFound', [binaryInfo.version]));
+      const { pythonInfo, packageInfo, binaryInfo } = await checkEnvironment(
+        this.spinner,
+        this.log.bind(this),
+        cmdMessages
+      );
 
       const orgUsername = targetOrg.getUsername() ?? 'target org';
       this.spinner.start(cmdMessages.getMessage('info.authenticating', [orgUsername]));

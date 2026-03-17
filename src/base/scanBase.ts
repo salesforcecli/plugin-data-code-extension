@@ -1,8 +1,7 @@
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { PythonChecker } from '../utils/pythonChecker.js';
-import { PipChecker } from '../utils/pipChecker.js';
 import { DatacodeBinaryChecker, type ScanResult } from '../utils/datacodeBinaryChecker.js';
+import { checkEnvironment } from '../utils/environmentChecker.js';
 
 export type BaseScanFlags = {
   entrypoint?: string;
@@ -42,25 +41,12 @@ export abstract class ScanBase extends SfCommand<ScanResult> {
 
     const workingDir = process.cwd();
 
-    this.spinner.start(messages.getMessage('info.checkingPython'));
-
     try {
-      const pythonInfo = await PythonChecker.checkPython311();
-
-      this.spinner.stop();
-      this.log(messages.getMessage('info.pythonFound', [pythonInfo.version, pythonInfo.command]));
-
-      this.spinner.start(messages.getMessage('info.checkingPackages'));
-      const packageInfo = await PipChecker.checkPackage('salesforce-data-customcode');
-
-      this.spinner.stop();
-      this.log(messages.getMessage('info.packageFound', [packageInfo.name, packageInfo.version]));
-
-      this.spinner.start(messages.getMessage('info.checkingBinary'));
-      const binaryInfo = await DatacodeBinaryChecker.checkBinary();
-
-      this.spinner.stop();
-      this.log(messages.getMessage('info.binaryFound', [binaryInfo.version]));
+      const { pythonInfo, packageInfo, binaryInfo } = await checkEnvironment(
+        this.spinner,
+        this.log.bind(this),
+        messages
+      );
 
       this.spinner.start(messages.getMessage('info.executingScan'));
       const executionResult = await DatacodeBinaryChecker.executeBinaryScan(
