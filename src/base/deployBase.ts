@@ -2,7 +2,7 @@ import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages, Org } from '@salesforce/core';
 import { DatacodeBinaryChecker, type DatacodeDeployExecutionResult } from '../utils/datacodeBinaryChecker.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
-import { type SharedResultProps } from './types.js';
+import { sharedBaseFlags, type SharedResultProps } from './types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('data-code-extension', 'deploy');
@@ -28,21 +28,7 @@ export type DeployResult = SharedResultProps & {
 // eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
 export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlags> extends SfCommand<DeployResult> {
   // Override baseFlags to hide global flags
-  public static readonly baseFlags = {
-    ...SfCommand.baseFlags,
-    // eslint-disable-next-line sf-plugin/no-hardcoded-messages-flags
-    'flags-dir': Flags.directory({
-      summary: 'Import flag values from a directory.',
-      helpGroup: 'GLOBAL',
-      hidden: false,
-    }),
-    // eslint-disable-next-line sf-plugin/no-json-flag, sf-plugin/no-hardcoded-messages-flags
-    json: Flags.boolean({
-      summary: 'Format output as json.',
-      helpGroup: 'GLOBAL',
-      hidden: true,
-    }),
-  };
+  public static readonly baseFlags = sharedBaseFlags;
 
   public static readonly flags = {
     name: Flags.string({

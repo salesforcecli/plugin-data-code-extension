@@ -1,7 +1,8 @@
-import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
+import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { DatacodeBinaryChecker, type ScanResult } from '../utils/datacodeBinaryChecker.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
+import { sharedBaseFlags } from './types.js';
 
 export type BaseScanFlags = {
   entrypoint?: string;
@@ -13,21 +14,7 @@ export type BaseScanFlags = {
 // eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
 export abstract class ScanBase extends SfCommand<ScanResult> {
   // Override baseFlags to hide global flags
-  public static readonly baseFlags = {
-    ...SfCommand.baseFlags,
-    // eslint-disable-next-line sf-plugin/no-hardcoded-messages-flags
-    'flags-dir': Flags.directory({
-      summary: 'Import flag values from a directory.',
-      helpGroup: 'GLOBAL',
-      hidden: false,
-    }),
-    // eslint-disable-next-line sf-plugin/no-json-flag, sf-plugin/no-hardcoded-messages-flags
-    json: Flags.boolean({
-      summary: 'Format output as json.',
-      helpGroup: 'GLOBAL',
-      hidden: true,
-    }),
-  };
+  public static readonly baseFlags = sharedBaseFlags;
 
   public async run(): Promise<ScanResult> {
     const { flags } = (await this.parse(this.constructor as typeof ScanBase)) as unknown as { flags: BaseScanFlags };
