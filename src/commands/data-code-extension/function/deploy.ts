@@ -8,8 +8,8 @@ const messages = Messages.loadMessages('data-code-extension', 'deploy');
 export default class Deploy extends DeployBase {
   public static readonly summary = messages.getMessage('summary', ['function']);
   public static readonly description = messages.getMessage('description');
-  // eslint-disable-next-line sf-plugin/no-missing-messages
   public static readonly examples = messages
+    // eslint-disable-next-line sf-plugin/no-missing-messages
     .getMessages('examples')
     .map((example) => example.replace(/%s/g, 'function'));
 
