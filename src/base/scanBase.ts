@@ -31,8 +31,7 @@ export abstract class ScanBase extends SfCommand<ScanResult> {
   };
 
   public async run(): Promise<ScanResult> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
-    const { flags } = (await this.parse(this.constructor as any)) as unknown as { flags: BaseScanFlags };
+    const { flags } = (await this.parse(this.constructor as typeof ScanBase)) as unknown as { flags: BaseScanFlags };
     const codeType = this.getCodeType();
     const messages = this.getMessages();
 

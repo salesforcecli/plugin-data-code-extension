@@ -43,8 +43,7 @@ export abstract class InitBase extends SfCommand<InitResult> {
   };
 
   public async run(): Promise<InitResult> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
-    const { flags } = (await this.parse(this.constructor as any)) as unknown as { flags: BaseInitFlags };
+    const { flags } = (await this.parse(this.constructor as typeof InitBase)) as unknown as { flags: BaseInitFlags };
     const codeType = this.getCodeType();
     const messages = this.getMessages();
     const packageDir = flags['package-dir'];

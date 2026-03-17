@@ -46,8 +46,7 @@ export abstract class ZipBase extends SfCommand<ZipResult> {
   };
 
   public async run(): Promise<ZipResult> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
-    const { flags } = (await this.parse(this.constructor as any)) as unknown as { flags: BaseZipFlags };
+    const { flags } = (await this.parse(this.constructor as typeof ZipBase)) as unknown as { flags: BaseZipFlags };
     const codeType = this.getCodeType();
     const messages = this.getMessages();
     const packageDir = flags['package-dir'];
