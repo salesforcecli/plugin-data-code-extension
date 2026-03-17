@@ -2,7 +2,11 @@ import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { PythonChecker, type PythonVersionInfo } from '../utils/pythonChecker.js';
 import { PipChecker, type PipPackageInfo } from '../utils/pipChecker.js';
-import { DatacodeBinaryChecker, type DatacodeBinaryInfo, type DatacodeRunExecutionResult } from '../utils/datacodeBinaryChecker.js';
+import {
+  DatacodeBinaryChecker,
+  type DatacodeBinaryInfo,
+  type DatacodeRunExecutionResult,
+} from '../utils/datacodeBinaryChecker.js';
 
 export type RunResult = {
   success: boolean;
@@ -51,8 +55,6 @@ export abstract class RunBase extends SfCommand<RunResult> {
     const configFile = flags['config-file'];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const dependencies = flags['dependencies'];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const profile = flags['profile'];
 
     this.spinner.start(messages.getMessage('info.checkingPython'));
 
@@ -100,9 +102,7 @@ export abstract class RunBase extends SfCommand<RunResult> {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         configFile,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        dependencies,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        profile
+        dependencies
       );
 
       this.spinner.stop();

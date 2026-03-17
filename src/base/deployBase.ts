@@ -37,13 +37,13 @@ export abstract class DeployBase extends SfCommand<DeployResult> {
     'flags-dir': Flags.directory({
       summary: 'Import flag values from a directory.',
       helpGroup: 'GLOBAL',
-      hidden: false,  // Hide from help output
+      hidden: false, // Hide from help output
     }),
     // eslint-disable-next-line sf-plugin/no-json-flag, sf-plugin/no-hardcoded-messages-flags
     json: Flags.boolean({
       summary: 'Format output as json.',
       helpGroup: 'GLOBAL',
-      hidden: true,  // Hide from help output
+      hidden: true, // Hide from help output
     }),
   };
 
@@ -75,8 +75,6 @@ export abstract class DeployBase extends SfCommand<DeployResult> {
     const cpuSize = flags['cpu-size'] || 'CPU_2XL';
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const network = flags['network'];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const profile = flags['profile'];
 
     // Get additional flags from subclass (for function-specific flags)
     const additionalFlags = this.getAdditionalFlags();
@@ -136,9 +134,7 @@ export abstract class DeployBase extends SfCommand<DeployResult> {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         network,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        additionalFlags.functionInvokeOpt as string | undefined,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        profile
+        additionalFlags.functionInvokeOpt as string | undefined
       );
 
       this.spinner.stop();

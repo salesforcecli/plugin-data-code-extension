@@ -285,10 +285,7 @@ export class DatacodeBinaryChecker {
    * @returns Execution result with stdout, stderr, and archive information
    * @throws SfError if execution fails
    */
-  public static async executeBinaryZip(
-    packageDir: string,
-    network?: string
-  ): Promise<DatacodeZipExecutionResult> {
+  public static async executeBinaryZip(packageDir: string, network?: string): Promise<DatacodeZipExecutionResult> {
     // Build the command with optional network flag
     let command = 'datacustomcode zip';
 
@@ -403,8 +400,7 @@ export class DatacodeBinaryChecker {
     targetOrg: string,
     cpuSize: string,
     network?: string,
-    functionInvokeOpt?: string,
-    profile?: string
+    functionInvokeOpt?: string
   ): Promise<DatacodeDeployExecutionResult> {
     // Build the command with required and optional flags
     let command = 'datacustomcode deploy';
@@ -421,10 +417,6 @@ export class DatacodeBinaryChecker {
 
     if (functionInvokeOpt) {
       command += ` --function-invoke-opt "${functionInvokeOpt}"`;
-    }
-
-    if (profile) {
-      command += ` --profile "${profile}"`;
     }
 
     try {
@@ -523,7 +515,6 @@ export class DatacodeBinaryChecker {
    * @param targetOrg The target Salesforce org username/alias
    * @param configFile Optional path to a config file
    * @param dependencies Optional dependencies override
-   * @param profile Optional profile name
    * @returns Execution result with stdout, stderr, and parsed run output
    * @throws SfError if execution fails
    */
@@ -531,8 +522,7 @@ export class DatacodeBinaryChecker {
     packageDir: string,
     targetOrg: string,
     configFile?: string,
-    dependencies?: string,
-    profile?: string
+    dependencies?: string
   ): Promise<DatacodeRunExecutionResult> {
     // Build the command — flags before the positional argument
     let command = 'datacustomcode run';
@@ -544,10 +534,6 @@ export class DatacodeBinaryChecker {
 
     if (dependencies) {
       command += ` --dependencies "${dependencies}"`;
-    }
-
-    if (profile) {
-      command += ` --profile "${profile}"`;
     }
 
     command += ` "${packageDir}"`;

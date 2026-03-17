@@ -4,7 +4,7 @@ Run a Data Code Extension %s package locally using data from your Salesforce Org
 
 # description
 
-Executes an initialized Data Cloud custom code package against a Salesforce org. The package must be initialized before running. Supports both script and function packages with optional config file, dependencies, and profile overrides.
+Executes an initialized Data Cloud custom code package against a Salesforce org. The package must be initialized before running. Supports both script and function packages with optional config file and dependencies overrides.
 
 # examples
 
@@ -16,9 +16,9 @@ Executes an initialized Data Cloud custom code package against a Salesforce org.
 
   <%= config.bin %> data-code-extension %s run --entrypoint ./my-package --target-org myorg --config-file ./payload/config.json
 
-- Run with dependencies and a profile:
+- Run with dependencies:
 
-  <%= config.bin %> data-code-extension %s run --entrypoint ./my-package --target-org myorg --dependencies "pandas==2.0.0" --profile dev
+  <%= config.bin %> data-code-extension %s run --entrypoint ./my-package --target-org myorg --dependencies "pandas==2.0.0"
 
 # info.checkingPython
 
@@ -107,11 +107,3 @@ Dependencies override for the run.
 # flags.dependencies.description
 
 Optional comma-separated list of Python package dependencies to use during the run, overriding those defined in the package's requirements.txt.
-
-# flags.profile.summary
-
-Profile to use for the run.
-
-# flags.profile.description
-
-Optional profile name to select a specific configuration profile defined in the package for this run.

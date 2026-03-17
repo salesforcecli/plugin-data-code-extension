@@ -4,7 +4,7 @@ Deploy a Data Code Extension %s package to a Salesforce org
 
 # description
 
-Deploys an initialized and packaged Data Cloud custom code to a Salesforce org. The package must be initialized and zipped before deployment. Supports both script and function packages with configurable CPU resources and network settings.
+Deploys an initialized and packaged Data Cloud code extension to a Salesforce org. The package must be initialized and zipped before deployment. Supports both script and function packages with configurable CPU resources and network settings.
 
 # examples
 
@@ -135,14 +135,6 @@ Target Salesforce org for deployment.
 # flags.targetOrg.description
 
 The alias of the Salesforce org where you want to deploy the Data Cloud custom code package. The org must have Data Cloud enabled and appropriate permissions.
-
-# flags.profile.summary
-
-Profile to use for the deployment.
-
-# flags.profile.description
-
-Optional profile name to select a specific configuration profile defined in the package for this deployment.
 
 # flags.functionInvokeOpt.summary
 

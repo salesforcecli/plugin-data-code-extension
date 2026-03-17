@@ -9,12 +9,12 @@ export default class Run extends RunBase {
   public static readonly summary = messages.getMessage('summary', ['function']);
   public static readonly description = messages.getMessage('description');
   // eslint-disable-next-line sf-plugin/no-missing-messages
-  public static readonly examples = messages.getMessages('examples').map(example =>
-    example.replace(/%s/g, 'function')
-  );
+  public static readonly examples = messages
+    .getMessages('examples')
+    .map((example) => example.replace(/%s/g, 'function'));
 
   public static readonly flags = {
-    'entrypoint': Flags.file({
+    entrypoint: Flags.file({
       char: 'e',
       summary: messages.getMessage('flags.entrypoint.summary'),
       description: messages.getMessage('flags.entrypoint.description'),
@@ -33,14 +33,9 @@ export default class Run extends RunBase {
       required: false,
       exists: true,
     }),
-    'dependencies': Flags.string({
+    dependencies: Flags.string({
       summary: messages.getMessage('flags.dependencies.summary'),
       description: messages.getMessage('flags.dependencies.description'),
-      required: false,
-    }),
-    'profile': Flags.string({
-      summary: messages.getMessage('flags.profile.summary'),
-      description: messages.getMessage('flags.profile.description'),
       required: false,
     }),
   };
