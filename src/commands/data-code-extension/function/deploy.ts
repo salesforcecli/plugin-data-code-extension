@@ -1,15 +1,19 @@
 import { Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { DeployBase } from '../../../base/deployBase.js';
+import { DeployBase, type BaseDeployFlags } from '../../../base/deployBase.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('data-code-extension', 'deploy');
 
-export default class Deploy extends DeployBase {
+export type FunctionDeployFlags = BaseDeployFlags & {
+  'function-invoke-opt': string;
+};
+
+export default class Deploy extends DeployBase<FunctionDeployFlags> {
   public static readonly summary = messages.getMessage('summary', ['function']);
   public static readonly description = messages.getMessage('description');
+  // eslint-disable-next-line sf-plugin/no-missing-messages
   public static readonly examples = messages
-    // eslint-disable-next-line sf-plugin/no-missing-messages
     .getMessages('examples')
     .map((example) => example.replace(/%s/g, 'function'));
 
@@ -74,11 +78,9 @@ export default class Deploy extends DeployBase {
     return messages;
   }
 
-  protected getAdditionalFlags(): Record<string, unknown> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const { flags } = this.parsedFlags;
+  // eslint-disable-next-line class-methods-use-this
+  protected getAdditionalFlags(flags: FunctionDeployFlags): Record<string, unknown> {
     return {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       functionInvokeOpt: flags['function-invoke-opt'],
     };
   }

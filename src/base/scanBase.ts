@@ -4,6 +4,13 @@ import { PythonChecker } from '../utils/pythonChecker.js';
 import { PipChecker } from '../utils/pipChecker.js';
 import { DatacodeBinaryChecker, type ScanResult } from '../utils/datacodeBinaryChecker.js';
 
+export type BaseScanFlags = {
+  entrypoint?: string;
+  'config-file'?: string;
+  'dry-run': boolean;
+  'no-requirements': boolean;
+};
+
 // eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
 export abstract class ScanBase extends SfCommand<ScanResult> {
   // Override baseFlags to hide global flags
@@ -13,75 +20,61 @@ export abstract class ScanBase extends SfCommand<ScanResult> {
     'flags-dir': Flags.directory({
       summary: 'Import flag values from a directory.',
       helpGroup: 'GLOBAL',
-      hidden: false,  // Hide from help output
+      hidden: false,
     }),
     // eslint-disable-next-line sf-plugin/no-json-flag, sf-plugin/no-hardcoded-messages-flags
     json: Flags.boolean({
       summary: 'Format output as json.',
       helpGroup: 'GLOBAL',
-      hidden: true,  // Hide from help output
+      hidden: true,
     }),
   };
 
   public async run(): Promise<ScanResult> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
-    const { flags } = await this.parse(this.constructor as any);
+    const { flags } = (await this.parse(this.constructor as any)) as unknown as { flags: BaseScanFlags };
     const codeType = this.getCodeType();
     const messages = this.getMessages();
 
-    // Get flag values
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const config = flags['entrypoint'];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const config = flags.entrypoint;
     const configFile = flags['config-file'];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const dryRun = flags['dry-run'] || false;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const noRequirements = flags['no-requirements'] || false;
+    const dryRun = flags['dry-run'];
+    const noRequirements = flags['no-requirements'];
 
-    // Use current working directory as the scan directory
     const workingDir = process.cwd();
 
     this.spinner.start(messages.getMessage('info.checkingPython'));
 
     try {
-      // Check Python 3.11+ is installed
       const pythonInfo = await PythonChecker.checkPython311();
 
       this.spinner.stop();
       this.log(messages.getMessage('info.pythonFound', [pythonInfo.version, pythonInfo.command]));
 
-      // Check required pip packages
       this.spinner.start(messages.getMessage('info.checkingPackages'));
       const packageInfo = await PipChecker.checkPackage('salesforce-data-customcode');
 
       this.spinner.stop();
       this.log(messages.getMessage('info.packageFound', [packageInfo.name, packageInfo.version]));
 
-      // Check datacustomcode binary
       this.spinner.start(messages.getMessage('info.checkingBinary'));
       const binaryInfo = await DatacodeBinaryChecker.checkBinary();
 
       this.spinner.stop();
       this.log(messages.getMessage('info.binaryFound', [binaryInfo.version]));
 
-      // Execute datacustomcode scan
       this.spinner.start(messages.getMessage('info.executingScan'));
       const executionResult = await DatacodeBinaryChecker.executeBinaryScan(
         workingDir,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         config,
-        // Cast to boolean to ensure type safety
-        Boolean(dryRun),
-        Boolean(noRequirements),
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        dryRun,
+        noRequirements,
         configFile
       );
 
       this.spinner.stop();
       this.log(messages.getMessage('info.scanExecuted', [workingDir]));
 
-      // Print the raw binary output so nothing is swallowed
       if (executionResult.stdout) {
         this.log(executionResult.stdout);
       }
@@ -90,7 +83,6 @@ export abstract class ScanBase extends SfCommand<ScanResult> {
         this.warn(executionResult.stderr);
       }
 
-      // Show dry run notice if applicable
       if (dryRun) {
         this.log(messages.getMessage('info.dryRunNotice'));
       }
@@ -114,7 +106,6 @@ export abstract class ScanBase extends SfCommand<ScanResult> {
     }
   }
 
-  // Abstract methods that subclasses must implement
   protected abstract getCodeType(): 'script' | 'function';
   protected abstract getMessages(): Messages<string>;
 }

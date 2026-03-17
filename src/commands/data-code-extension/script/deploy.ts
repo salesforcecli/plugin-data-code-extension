@@ -1,6 +1,6 @@
 import { Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { DeployBase } from '../../../base/deployBase.js';
+import { DeployBase, type BaseDeployFlags } from '../../../base/deployBase.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('data-code-extension', 'deploy');
@@ -67,7 +67,7 @@ export default class Deploy extends DeployBase {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  protected getAdditionalFlags(): Record<string, unknown> {
+  protected getAdditionalFlags(_: BaseDeployFlags): Record<string, unknown> {
     return {};
   }
 }

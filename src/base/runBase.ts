@@ -1,5 +1,5 @@
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
-import { Messages } from '@salesforce/core';
+import { Messages, Org } from '@salesforce/core';
 import { PythonChecker, type PythonVersionInfo } from '../utils/pythonChecker.js';
 import { PipChecker, type PipPackageInfo } from '../utils/pipChecker.js';
 import {
@@ -7,6 +7,13 @@ import {
   type DatacodeBinaryInfo,
   type DatacodeRunExecutionResult,
 } from '../utils/datacodeBinaryChecker.js';
+
+export type BaseRunFlags = {
+  entrypoint: string;
+  'target-org': Org;
+  'config-file'?: string;
+  dependencies?: string;
+};
 
 export type RunResult = {
   success: boolean;
@@ -43,65 +50,49 @@ export abstract class RunBase extends SfCommand<RunResult> {
 
   public async run(): Promise<RunResult> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
-    const { flags } = await this.parse(this.constructor as any);
+    const { flags } = (await this.parse(this.constructor as any)) as unknown as { flags: BaseRunFlags };
     const codeType = this.getCodeType();
     const messages = this.getMessages();
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const packageDir = flags['entrypoint'];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const packageDir = flags.entrypoint;
     const targetOrg = flags['target-org'];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const configFile = flags['config-file'];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const dependencies = flags['dependencies'];
+    const dependencies = flags.dependencies;
 
     this.spinner.start(messages.getMessage('info.checkingPython'));
 
     try {
-      // Check Python 3.11+ is installed
       const pythonInfo = await PythonChecker.checkPython311();
 
       this.spinner.stop();
       this.log(messages.getMessage('info.pythonFound', [pythonInfo.version, pythonInfo.command]));
 
-      // Check required pip packages
       this.spinner.start(messages.getMessage('info.checkingPackages'));
       const packageInfo = await PipChecker.checkPackage('salesforce-data-customcode');
 
       this.spinner.stop();
       this.log(messages.getMessage('info.packageFound', [packageInfo.name, packageInfo.version]));
 
-      // Check datacustomcode binary
       this.spinner.start(messages.getMessage('info.checkingBinary'));
       const binaryInfo = await DatacodeBinaryChecker.checkBinary();
 
       this.spinner.stop();
       this.log(messages.getMessage('info.binaryFound', [binaryInfo.version]));
 
-      // Authenticate with the target org
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-      const orgUsername = targetOrg.getUsername() || 'target org';
+      const orgUsername = targetOrg.getUsername() ?? 'target org';
       this.spinner.start(messages.getMessage('info.authenticating', [orgUsername]));
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
       const connection = targetOrg.getConnection();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       await connection.refreshAuth();
 
       this.spinner.stop();
       this.log(messages.getMessage('info.authenticated', [orgUsername]));
 
-      // Execute datacustomcode run
       this.spinner.start(messages.getMessage('info.runningPackage'));
       const executionResult = await DatacodeBinaryChecker.executeBinaryRun(
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         packageDir,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         orgUsername,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         configFile,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         dependencies
       );
 
@@ -124,9 +115,7 @@ export abstract class RunBase extends SfCommand<RunResult> {
         packageInfo,
         binaryInfo,
         codeType,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         packageDir,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         targetOrg: orgUsername,
         status: executionResult.status,
         output: executionResult.output,
@@ -139,7 +128,6 @@ export abstract class RunBase extends SfCommand<RunResult> {
     }
   }
 
-  // Abstract methods that subclasses must implement
   protected abstract getCodeType(): 'script' | 'function';
   protected abstract getMessages(): Messages<string>;
 }

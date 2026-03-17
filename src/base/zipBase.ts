@@ -9,6 +9,11 @@ import {
   type DatacodeZipExecutionResult,
 } from '../utils/datacodeBinaryChecker.js';
 
+export type BaseZipFlags = {
+  'package-dir': string;
+  network?: string;
+};
+
 export type ZipResult = {
   success: boolean;
   pythonVersion: PythonVersionInfo;
@@ -30,27 +35,24 @@ export abstract class ZipBase extends SfCommand<ZipResult> {
     'flags-dir': Flags.directory({
       summary: 'Import flag values from a directory.',
       helpGroup: 'GLOBAL',
-      hidden: false, // Hide from help output
+      hidden: false,
     }),
     // eslint-disable-next-line sf-plugin/no-json-flag, sf-plugin/no-hardcoded-messages-flags
     json: Flags.boolean({
       summary: 'Format output as json.',
       helpGroup: 'GLOBAL',
-      hidden: true, // Hide from help output
+      hidden: true,
     }),
   };
 
   public async run(): Promise<ZipResult> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
-    const { flags } = await this.parse(this.constructor as any);
+    const { flags } = (await this.parse(this.constructor as any)) as unknown as { flags: BaseZipFlags };
     const codeType = this.getCodeType();
     const messages = this.getMessages();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const packageDir = flags['package-dir'];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const network = flags['network'];
+    const network = flags.network;
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     if (!existsSync(packageDir)) {
       throw new SfError(
         messages.getMessage('error.packageDirNotFound', [packageDir]),
@@ -62,48 +64,36 @@ export abstract class ZipBase extends SfCommand<ZipResult> {
     this.spinner.start(messages.getMessage('info.checkingPython'));
 
     try {
-      // Check Python 3.11+ is installed
       const pythonInfo = await PythonChecker.checkPython311();
 
       this.spinner.stop();
       this.log(messages.getMessage('info.pythonFound', [pythonInfo.version, pythonInfo.command]));
 
-      // Check required pip packages
       this.spinner.start(messages.getMessage('info.checkingPackages'));
       const packageInfo = await PipChecker.checkPackage('salesforce-data-customcode');
 
       this.spinner.stop();
       this.log(messages.getMessage('info.packageFound', [packageInfo.name, packageInfo.version]));
 
-      // Check datacustomcode binary
       this.spinner.start(messages.getMessage('info.checkingBinary'));
       const binaryInfo = await DatacodeBinaryChecker.checkBinary();
 
       this.spinner.stop();
       this.log(messages.getMessage('info.binaryFound', [binaryInfo.version]));
 
-      // Execute datacustomcode zip
       this.spinner.start(messages.getMessage('info.executingZip'));
-      const executionResult = await DatacodeBinaryChecker.executeBinaryZip(
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        packageDir,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        network
-      );
+      const executionResult = await DatacodeBinaryChecker.executeBinaryZip(packageDir, network);
 
       this.spinner.stop();
 
-      // Log the archive creation result
       if (executionResult.archivePath) {
         this.log(messages.getMessage('info.archiveCreated', [executionResult.archivePath]));
       }
 
-      // Log file count if available
       if (executionResult.fileCount !== undefined) {
         this.log(messages.getMessage('info.filesIncluded', [executionResult.fileCount.toString()]));
       }
 
-      // Log archive size if available
       if (executionResult.archiveSize) {
         this.log(messages.getMessage('info.archiveSize', [executionResult.archiveSize]));
       }
@@ -114,7 +104,6 @@ export abstract class ZipBase extends SfCommand<ZipResult> {
         packageInfo,
         binaryInfo,
         codeType,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         packageDir,
         archivePath: executionResult.archivePath,
         executionResult,
@@ -129,7 +118,6 @@ export abstract class ZipBase extends SfCommand<ZipResult> {
     }
   }
 
-  // Abstract methods that subclasses must implement
   protected abstract getCodeType(): 'script' | 'function';
   protected abstract getMessages(): Messages<string>;
 }
