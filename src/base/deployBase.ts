@@ -2,6 +2,7 @@ import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages, Org } from '@salesforce/core';
 import { DatacodeBinaryChecker, type DatacodeDeployExecutionResult } from '../utils/datacodeBinaryChecker.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
+import { type SharedResultProps } from './types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('data-code-extension', 'deploy');
@@ -16,27 +17,11 @@ export type BaseDeployFlags = {
   network?: string;
 };
 
-export type DeployResult = {
-  success: boolean;
-  pythonVersion: {
-    version: string;
-    command: string;
-  };
-  packageInfo?: {
-    name: string;
-    version: string;
-  };
-  binaryInfo?: {
-    command: string;
-    version: string;
-  };
-  codeType: 'script' | 'function';
-  packageDir: string;
+export type DeployResult = SharedResultProps & {
   targetOrg: string;
   deploymentId?: string;
   endpointUrl?: string;
   status?: string;
-  message: string;
   executionResult?: DatacodeDeployExecutionResult;
 };
 

@@ -1,29 +1,17 @@
 import { existsSync } from 'node:fs';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages, SfError } from '@salesforce/core';
-import { type PythonVersionInfo } from '../utils/pythonChecker.js';
-import { type PipPackageInfo } from '../utils/pipChecker.js';
-import {
-  DatacodeBinaryChecker,
-  type DatacodeBinaryInfo,
-  type DatacodeZipExecutionResult,
-} from '../utils/datacodeBinaryChecker.js';
+import { DatacodeBinaryChecker, type DatacodeZipExecutionResult } from '../utils/datacodeBinaryChecker.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
+import { type SharedResultProps } from './types.js';
 
 export type BaseZipFlags = {
   'package-dir': string;
   network?: string;
 };
 
-export type ZipResult = {
-  success: boolean;
-  pythonVersion: PythonVersionInfo;
-  packageInfo?: PipPackageInfo;
-  binaryInfo?: DatacodeBinaryInfo;
-  codeType: 'script' | 'function';
-  packageDir: string;
+export type ZipResult = SharedResultProps & {
   archivePath?: string;
-  message: string;
   executionResult?: DatacodeZipExecutionResult;
 };
 

@@ -1,26 +1,14 @@
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { type PythonVersionInfo } from '../utils/pythonChecker.js';
-import { type PipPackageInfo } from '../utils/pipChecker.js';
-import {
-  DatacodeBinaryChecker,
-  type DatacodeBinaryInfo,
-  type DatacodeInitExecutionResult,
-} from '../utils/datacodeBinaryChecker.js';
+import { DatacodeBinaryChecker, type DatacodeInitExecutionResult } from '../utils/datacodeBinaryChecker.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
+import { type SharedResultProps } from './types.js';
 
 export type BaseInitFlags = {
   'package-dir': string;
 };
 
-export type InitResult = {
-  success: boolean;
-  pythonVersion: PythonVersionInfo;
-  packageInfo?: PipPackageInfo;
-  binaryInfo?: DatacodeBinaryInfo;
-  codeType: 'script' | 'function';
-  packageDir: string;
-  message: string;
+export type InitResult = SharedResultProps & {
   executionResult?: DatacodeInitExecutionResult;
 };
 

@@ -1,13 +1,8 @@
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages, Org } from '@salesforce/core';
-import { type PythonVersionInfo } from '../utils/pythonChecker.js';
-import { type PipPackageInfo } from '../utils/pipChecker.js';
-import {
-  DatacodeBinaryChecker,
-  type DatacodeBinaryInfo,
-  type DatacodeRunExecutionResult,
-} from '../utils/datacodeBinaryChecker.js';
+import { DatacodeBinaryChecker, type DatacodeRunExecutionResult } from '../utils/datacodeBinaryChecker.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
+import { type SharedResultProps } from './types.js';
 
 export type BaseRunFlags = {
   entrypoint: string;
@@ -16,17 +11,10 @@ export type BaseRunFlags = {
   dependencies?: string;
 };
 
-export type RunResult = {
-  success: boolean;
-  pythonVersion: PythonVersionInfo;
-  packageInfo?: PipPackageInfo;
-  binaryInfo?: DatacodeBinaryInfo;
-  codeType: 'script' | 'function';
-  packageDir: string;
+export type RunResult = SharedResultProps & {
   targetOrg: string;
   status?: string;
   output?: string;
-  message: string;
   executionResult?: DatacodeRunExecutionResult;
 };
 
