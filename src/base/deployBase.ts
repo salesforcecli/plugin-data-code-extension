@@ -106,7 +106,7 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
       this.spinner.stop();
       this.log(cmdMessages.getMessage('info.authenticated', [orgUsername]));
 
-      this.spinner.start(cmdMessages.getMessage('info.deployingPackage'));
+      this.log(cmdMessages.getMessage('info.deployingPackage'));
       const executionResult = await DatacodeBinaryExecutor.executeBinaryDeploy(
         name,
         version,
@@ -118,16 +118,7 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
         additionalFlags.functionInvokeOpt as string | undefined
       );
 
-      this.spinner.stop();
       this.log(cmdMessages.getMessage('info.deploymentComplete', [name, version]));
-
-      if (executionResult.stdout) {
-        this.log(executionResult.stdout);
-      }
-
-      if (executionResult.stderr) {
-        this.warn(executionResult.stderr);
-      }
 
       this.log(cmdMessages.getMessage('info.deploySuccess'));
 

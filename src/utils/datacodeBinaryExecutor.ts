@@ -1,4 +1,4 @@
-import { exec, type ExecException } from 'node:child_process';
+import { exec, spawn, type ExecException } from 'node:child_process';
 import { promisify } from 'node:util';
 import { SfError } from '@salesforce/core';
 import { Messages } from '@salesforce/core';
@@ -283,82 +283,122 @@ export class DatacodeBinaryExecutor {
     network?: string,
     functionInvokeOpt?: string
   ): Promise<DatacodeDeployExecutionResult> {
-    // Build the command with required and optional flags
-    let command = 'datacustomcode deploy';
-    command += ` --name "${name}"`;
-    command += ` --version "${version}"`;
-    command += ` --description "${description}"`;
-    command += ` --path "${packageDir}"`; // Note: package-dir maps to --path
-    command += ` --sf-cli-org "${targetOrg}"`; // Note: target-org maps to --sf-cli-org
-    command += ` --cpu-size ${cpuSize}`;
+    // Build args array for spawn (avoids shell-escaping issues and enables streaming)
+    const args = [
+      'deploy',
+      '--name',
+      name,
+      '--version',
+      version,
+      '--description',
+      description,
+      '--path',
+      packageDir,
+      '--sf-cli-org',
+      targetOrg,
+      '--cpu-size',
+      cpuSize,
+    ];
 
     if (network) {
-      command += ` --network "${network}"`;
+      args.push('--network', network);
     }
 
     if (functionInvokeOpt) {
-      command += ` --function-invoke-opt "${functionInvokeOpt}"`;
+      args.push('--function-invoke-opt', functionInvokeOpt);
     }
 
-    try {
-      const { stdout, stderr } = await execAsync(command, {
-        timeout: 300_000, // 5 minute timeout (deployment can take time)
+    return new Promise((resolve, reject) => {
+      const child = spawn('datacustomcode', args, {
+        timeout: 300_000,
+        env: { ...process.env, PYTHONUNBUFFERED: '1' },
       });
 
-      // Parse deployment ID from output
-      let deploymentId: string | undefined;
-      const deploymentIdPattern = /Deployment ID: (.+)/i;
-      const deploymentMatch = deploymentIdPattern.exec(stdout);
-      if (deploymentMatch) {
-        deploymentId = deploymentMatch[1].trim();
-      }
+      let stdout = '';
+      let stderr = '';
 
-      // Parse endpoint URL from output
-      let endpointUrl: string | undefined;
-      const endpointUrlPattern = /Endpoint URL: (.+)/i;
-      const endpointMatch = endpointUrlPattern.exec(stdout);
-      if (endpointMatch) {
-        endpointUrl = endpointMatch[1].trim();
-      }
+      child.stdout.on('data', (chunk: Buffer) => {
+        const text = chunk.toString();
+        stdout += text;
+        process.stdout.write(text);
+      });
 
-      // Parse deployment status from output
-      let status: string | undefined;
-      const statusPattern = /Status: (.+)/i;
-      const statusMatch = statusPattern.exec(stdout);
-      if (statusMatch) {
-        status = statusMatch[1].trim();
-      }
+      child.stderr.on('data', (chunk: Buffer) => {
+        const text = chunk.toString();
+        stderr += text;
+        process.stderr.write(text);
+      });
 
-      return {
-        stdout: stdout.trim(),
-        stderr: stderr.trim(),
-        deploymentId,
-        endpointUrl,
-        status,
-      };
-    } catch (error) {
-      const execError = error as ExecException & { stdout?: string; stderr?: string };
-      const errorMessage = execError.message ?? String(error);
-      const binaryOutput = execError.stderr?.trim() ?? errorMessage;
+      child.on('close', (code) => {
+        const stdoutTrimmed = stdout.trim();
+        const stderrTrimmed = stderr.trim();
 
-      if (errorMessage.includes('Authentication failed') || errorMessage.includes('Invalid credentials')) {
+        if (code !== 0) {
+          const errorMessage = stderrTrimmed || `Process exited with code ${code ?? 'unknown'}`;
+
+          if (errorMessage.includes('Authentication failed') || errorMessage.includes('Invalid credentials')) {
+            const sfError = new SfError(
+              messages.getMessage('error.deployAuthenticationFailed', [targetOrg]),
+              'DeployAuthenticationFailed',
+              messages.getMessages('actions.deployAuthenticationFailed')
+            );
+            sfError.data = { stdout: stdoutTrimmed };
+            reject(sfError);
+            return;
+          }
+
+          const sfError = new SfError(
+            messages.getMessage('error.deployExecutionFailed', [name, errorMessage]),
+            'DeployExecutionFailed',
+            messages.getMessages('actions.deployExecutionFailed')
+          );
+          sfError.data = { stdout: stdoutTrimmed };
+          reject(sfError);
+          return;
+        }
+
+        // Parse deployment ID from output
+        let deploymentId: string | undefined;
+        const deploymentIdPattern = /Deployment ID: (.+)/i;
+        const deploymentMatch = deploymentIdPattern.exec(stdoutTrimmed);
+        if (deploymentMatch) {
+          deploymentId = deploymentMatch[1].trim();
+        }
+
+        // Parse endpoint URL from output
+        let endpointUrl: string | undefined;
+        const endpointUrlPattern = /Endpoint URL: (.+)/i;
+        const endpointMatch = endpointUrlPattern.exec(stdoutTrimmed);
+        if (endpointMatch) {
+          endpointUrl = endpointMatch[1].trim();
+        }
+
+        // Parse deployment status from output
+        let status: string | undefined;
+        const statusPattern = /Status: (.+)/i;
+        const statusMatch = statusPattern.exec(stdoutTrimmed);
+        if (statusMatch) {
+          status = statusMatch[1].trim();
+        }
+
+        resolve({
+          stdout: stdoutTrimmed,
+          stderr: stderrTrimmed,
+          deploymentId,
+          endpointUrl,
+          status,
+        });
+      });
+
+      child.on('error', (err) => {
         const sfError = new SfError(
-          messages.getMessage('error.deployAuthenticationFailed', [targetOrg]),
-          'DeployAuthenticationFailed',
-          messages.getMessages('actions.deployAuthenticationFailed')
+          messages.getMessage('error.deployExecutionFailed', [name, err.message]),
+          'DeployExecutionFailed',
+          messages.getMessages('actions.deployExecutionFailed')
         );
-        sfError.data = { stdout: execError.stdout?.trim() };
-        throw sfError;
-      }
-
-      const sfError = new SfError(
-        messages.getMessage('error.deployExecutionFailed', [name, binaryOutput]),
-        'DeployExecutionFailed',
-        messages.getMessages('actions.deployExecutionFailed')
-      );
-      sfError.data = { stdout: execError.stdout?.trim() };
-      throw sfError;
-    }
+        reject(sfError);
+      });
+    });
   }
 
   /**
