@@ -13,8 +13,8 @@ export type FunctionDeployFlags = BaseDeployFlags & {
 export default class Deploy extends DeployBase<FunctionDeployFlags> {
   public static readonly summary = messages.getMessage('summary', ['function']);
   public static readonly description = messages.getMessage('description');
-  // eslint-disable-next-line sf-plugin/no-missing-messages
   public static readonly examples = messages
+    // eslint-disable-next-line sf-plugin/no-missing-messages
     .getMessages('examples')
     .map((example) => example.replace(/%s/g, 'function'));
 
