@@ -328,7 +328,7 @@ describe('data-code-extension deploy', () => {
         'test@example.com',
       ]);
 
-      expect(sfCommandStubs.log.calledWith('Deployment successful')).to.be.true;
+      expect(sfCommandStubs.log.calledWith('Data Code Extension deployment completed successfully!')).to.be.true;
     });
 
     it('should display endpoint URL when available', async () => {
@@ -345,7 +345,7 @@ describe('data-code-extension deploy', () => {
         'test@example.com',
       ]);
 
-      expect(sfCommandStubs.log.calledWith('Deployment successful')).to.be.true;
+      expect(sfCommandStubs.log.calledWith('Data Code Extension deployment completed successfully!')).to.be.true;
     });
 
     it('should return structured JSON result', async () => {
