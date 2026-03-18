@@ -17,14 +17,14 @@ export type PythonVersionInfo = {
 };
 
 export class PythonChecker {
-  private static readonly MIN_MAJOR = 3;
-  private static readonly MIN_MINOR = 11;
+  private static readonly REQUIRED_MAJOR = 3;
+  private static readonly REQUIRED_MINOR = 11;
 
   /**
-   * Checks if Python 3.11 or higher is installed on the system.
+   * Checks if Python 3.11 is installed on the system.
    *
-   * @returns PythonVersionInfo if Python 3.11+ is found
-   * @throws SfError if Python is not found or version is insufficient
+   * @returns PythonVersionInfo if Python 3.11 is found
+   * @throws SfError if Python is not found or is not exactly version 3.11
    */
   public static async checkPython311(): Promise<PythonVersionInfo> {
     // Try python3 first, then python
@@ -35,15 +35,15 @@ export class PythonChecker {
         // eslint-disable-next-line no-await-in-loop
         const versionInfo = await this.getPythonVersion(command);
 
-        if (this.isVersionSufficient(versionInfo)) {
+        if (this.isVersionRequired(versionInfo)) {
           return versionInfo;
         }
 
-        // Python found but version is too old
+        // Python found but version is not 3.11
         throw new SfError(
           messages.getMessage('error.versionMismatch', [
             `${versionInfo.major}.${versionInfo.minor}.${versionInfo.patch}`,
-            `${this.MIN_MAJOR}.${this.MIN_MINOR}`,
+            `${this.REQUIRED_MAJOR}.${this.REQUIRED_MINOR}`,
           ]),
           'PythonVersionMismatch',
           messages.getMessages('actions.versionMismatch')
@@ -96,20 +96,12 @@ export class PythonChecker {
   }
 
   /**
-   * Checks if the Python version meets the minimum requirements.
+   * Checks if the Python version is exactly the required version (major.minor match).
    *
    * @param versionInfo The Python version information
-   * @returns true if version is 3.11
+   * @returns true if version is exactly 3.11.x
    */
-  private static isVersionSufficient(versionInfo: PythonVersionInfo): boolean {
-    if (versionInfo.major > this.MIN_MAJOR) {
-      return true;
-    }
-
-    if (versionInfo.major === this.MIN_MAJOR && versionInfo.minor >= this.MIN_MINOR) {
-      return true;
-    }
-
-    return false;
+  private static isVersionRequired(versionInfo: PythonVersionInfo): boolean {
+    return versionInfo.major === this.REQUIRED_MAJOR && versionInfo.minor === this.REQUIRED_MINOR;
   }
 }

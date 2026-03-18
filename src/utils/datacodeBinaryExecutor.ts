@@ -96,26 +96,10 @@ export class DatacodeBinaryExecutor {
         projectPath: packageDir,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-
-      if (errorMessage.includes('Permission denied')) {
-        throw new SfError(
-          messages.getMessage('error.initPermissionDenied', [packageDir]),
-          'InitPermissionDenied',
-          messages.getMessages('actions.initPermissionDenied')
-        );
-      }
-
-      if (errorMessage.includes('already exists')) {
-        throw new SfError(
-          messages.getMessage('error.initDirectoryExists', [packageDir]),
-          'InitDirectoryExists',
-          messages.getMessages('actions.initDirectoryExists')
-        );
-      }
-
+      const execError = error as ExecException & { stderr?: string };
+      const binaryOutput = execError.stderr?.trim() ?? (error instanceof Error ? error.message : String(error));
       throw new SfError(
-        messages.getMessage('error.initExecutionFailed', [packageDir, errorMessage]),
+        messages.getMessage('error.initExecutionFailed', [packageDir, binaryOutput]),
         'InitExecutionFailed',
         messages.getMessages('actions.initExecutionFailed')
       );
@@ -198,34 +182,10 @@ export class DatacodeBinaryExecutor {
         filesScanned: filesScanned.length > 0 ? filesScanned : undefined,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-
-      if (errorMessage.includes('Permission denied')) {
-        throw new SfError(
-          messages.getMessage('error.scanPermissionDenied', [workingDir]),
-          'ScanPermissionDenied',
-          messages.getMessages('actions.scanPermissionDenied')
-        );
-      }
-
-      if (errorMessage.includes('config') && errorMessage.includes('not found')) {
-        throw new SfError(
-          messages.getMessage('error.configNotFound', [config ?? 'payload/config.json']),
-          'ConfigNotFound',
-          messages.getMessages('actions.configNotFound')
-        );
-      }
-
-      if (errorMessage.includes('not initialized') || errorMessage.includes('not a package')) {
-        throw new SfError(
-          messages.getMessage('error.notInPackageDir'),
-          'NotInPackageDir',
-          messages.getMessages('actions.notInPackageDir')
-        );
-      }
-
+      const execError = error as ExecException & { stderr?: string };
+      const binaryOutput = execError.stderr?.trim() ?? (error instanceof Error ? error.message : String(error));
       throw new SfError(
-        messages.getMessage('error.scanExecutionFailed', [workingDir, errorMessage]),
+        messages.getMessage('error.scanExecutionFailed', [workingDir, binaryOutput]),
         'ScanExecutionFailed',
         messages.getMessages('actions.scanExecutionFailed')
       );
@@ -289,42 +249,10 @@ export class DatacodeBinaryExecutor {
         archiveSize,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-
-      if (errorMessage.includes('Permission denied')) {
-        throw new SfError(
-          messages.getMessage('error.zipPermissionDenied', [packageDir]),
-          'ZipPermissionDenied',
-          messages.getMessages('actions.zipPermissionDenied')
-        );
-      }
-
-      if (errorMessage.includes('not found') || errorMessage.includes('does not exist')) {
-        throw new SfError(
-          messages.getMessage('error.packageDirNotFound', [packageDir]),
-          'PackageDirNotFound',
-          messages.getMessages('actions.packageDirNotFound')
-        );
-      }
-
-      if (errorMessage.includes('not initialized') || errorMessage.includes('config.json')) {
-        throw new SfError(
-          messages.getMessage('error.notInitializedPackage', [packageDir]),
-          'NotInitializedPackage',
-          messages.getMessages('actions.notInitializedPackage')
-        );
-      }
-
-      if (errorMessage.includes('disk space') || errorMessage.includes('No space left')) {
-        throw new SfError(
-          messages.getMessage('error.insufficientDiskSpace'),
-          'InsufficientDiskSpace',
-          messages.getMessages('actions.insufficientDiskSpace')
-        );
-      }
-
+      const execError = error as ExecException & { stderr?: string };
+      const binaryOutput = execError.stderr?.trim() ?? (error instanceof Error ? error.message : String(error));
       throw new SfError(
-        messages.getMessage('error.zipExecutionFailed', [packageDir, errorMessage]),
+        messages.getMessage('error.zipExecutionFailed', [packageDir, binaryOutput]),
         'ZipExecutionFailed',
         messages.getMessages('actions.zipExecutionFailed')
       );
@@ -409,53 +337,27 @@ export class DatacodeBinaryExecutor {
         status,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const execError = error as ExecException & { stdout?: string; stderr?: string };
+      const errorMessage = execError.message ?? String(error);
+      const binaryOutput = execError.stderr?.trim() ?? errorMessage;
 
       if (errorMessage.includes('Authentication failed') || errorMessage.includes('Invalid credentials')) {
-        throw new SfError(
+        const sfError = new SfError(
           messages.getMessage('error.deployAuthenticationFailed', [targetOrg]),
           'DeployAuthenticationFailed',
           messages.getMessages('actions.deployAuthenticationFailed')
         );
+        sfError.data = { stdout: execError.stdout?.trim() };
+        throw sfError;
       }
 
-      if (errorMessage.includes('Invalid package') || errorMessage.includes('Package validation failed')) {
-        throw new SfError(
-          messages.getMessage('error.deployPackageInvalid', [packageDir]),
-          'DeployPackageInvalid',
-          messages.getMessages('actions.deployPackageInvalid')
-        );
-      }
-
-      if (errorMessage.includes('already exists') || errorMessage.includes('Conflict')) {
-        throw new SfError(
-          messages.getMessage('error.deployConflict', [name, version]),
-          'DeployConflict',
-          messages.getMessages('actions.deployConflict')
-        );
-      }
-
-      if (errorMessage.includes('quota exceeded') || errorMessage.includes('limit reached')) {
-        throw new SfError(
-          messages.getMessage('error.deployQuotaExceeded'),
-          'DeployQuotaExceeded',
-          messages.getMessages('actions.deployQuotaExceeded')
-        );
-      }
-
-      if (errorMessage.includes('network error') || errorMessage.includes('connection refused')) {
-        throw new SfError(
-          messages.getMessage('error.deployNetworkError'),
-          'DeployNetworkError',
-          messages.getMessages('actions.deployNetworkError')
-        );
-      }
-
-      throw new SfError(
-        messages.getMessage('error.deployExecutionFailed', [name, errorMessage]),
+      const sfError = new SfError(
+        messages.getMessage('error.deployExecutionFailed', [name, binaryOutput]),
         'DeployExecutionFailed',
         messages.getMessages('actions.deployExecutionFailed')
       );
+      sfError.data = { stdout: execError.stdout?.trim() };
+      throw sfError;
     }
   }
 

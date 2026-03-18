@@ -1,26 +1,6 @@
-# error.initPermissionDenied
-
-Permission denied when creating package at '%s'
-
-# error.initDirectoryExists
-
-Directory '%s' already exists and is not empty
-
 # error.initExecutionFailed
 
 Failed to initialize package at '%s': %s
-
-# actions.initPermissionDenied
-
-- Check that you have write permissions for the directory
-- Try running the command with appropriate permissions
-- Ensure the parent directory exists
-
-# actions.initDirectoryExists
-
-- Choose a different directory name
-- Remove or rename the existing directory
-- Use --force flag to overwrite (if supported)
 
 # actions.initExecutionFailed
 
@@ -29,40 +9,9 @@ Failed to initialize package at '%s': %s
 - Run 'datacustomcode version' to verify the binary works
 - Check the error message for specific issues
 
-# error.scanPermissionDenied
-
-Permission denied when scanning package at '%s'
-
-# error.configNotFound
-
-Config file not found at '%s'
-
-# error.notInPackageDir
-
-Current directory is not an initialized Data Code Extension package
-
 # error.scanExecutionFailed
 
 Failed to scan package at '%s': %s
-
-# actions.scanPermissionDenied
-
-- Check that you have read permissions for the directory
-- Verify all Python files are readable
-- Ensure the config file is writable
-
-# actions.configNotFound
-
-- Verify the config file path is correct
-- Check if you're in the right directory
-- Run 'init' command first if package is not initialized
-- Use default config path: payload/config.json
-
-# actions.notInPackageDir
-
-- Change to an initialized package directory
-- Run 'data-code-extension init' first to initialize a package
-- Check that config.json exists in the payload directory
 
 # actions.scanExecutionFailed
 
@@ -71,49 +20,9 @@ Failed to scan package at '%s': %s
 - Run 'datacustomcode version' to verify the binary works
 - Check the error message for specific issues
 
-# error.zipPermissionDenied
-
-Permission denied when creating archive for package at '%s'
-
-# error.packageDirNotFound
-
-Package directory not found at '%s'
-
-# error.notInitializedPackage
-
-Directory '%s' is not an initialized Data Code Extension package
-
-# error.insufficientDiskSpace
-
-Insufficient disk space to create archive
-
 # error.zipExecutionFailed
 
 Failed to create archive for package at '%s': %s
-
-# actions.zipPermissionDenied
-
-- Check that you have read permissions for the package directory
-- Verify you have write permissions for the output location
-- Ensure all files in the package are readable
-
-# actions.packageDirNotFound
-
-- Verify the package directory path is correct
-- Check that the directory exists
-- Run 'init' command first to create a package
-
-# actions.notInitializedPackage
-
-- Ensure the directory contains a valid package structure
-- Check for config.json in the payload directory
-- Run 'init' command first to initialize the package
-
-# actions.insufficientDiskSpace
-
-- Free up disk space on your system
-- Use a different output location with more space
-- Remove unnecessary files or archives
 
 # actions.zipExecutionFailed
 
@@ -126,26 +35,6 @@ Failed to create archive for package at '%s': %s
 
 Failed to authenticate with Salesforce org '%s'
 
-# error.deployPackageInvalid
-
-Package validation failed for '%s'. The package format is invalid or corrupted.
-
-# error.deployConflict
-
-A deployment with name '%s' and version '%s' already exists
-
-# error.deployQuotaExceeded
-
-Deployment quota exceeded for the organization
-
-# error.deployNetworkError
-
-Network error occurred during deployment
-
-# error.deployExecutionFailed
-
-Failed to deploy package '%s': %s
-
 # actions.deployAuthenticationFailed
 
 - Verify the target org username/alias is correct
@@ -153,33 +42,9 @@ Failed to deploy package '%s': %s
 - Check that the org has the necessary permissions
 - Ensure the org has Data Cloud enabled
 
-# actions.deployPackageInvalid
+# error.deployExecutionFailed
 
-- Verify the package was created with 'data-code-extension zip' command
-- Check that the package directory contains valid code
-- Ensure the package has not been corrupted
-- Re-package the code and try again
-
-# actions.deployConflict
-
-- Use a different name or version for your deployment
-- Check existing deployments in your org
-- Consider updating the version number
-- Delete the existing deployment if appropriate
-
-# actions.deployQuotaExceeded
-
-- Check your organization's deployment quota
-- Remove unused deployments
-- Contact your Salesforce administrator
-- Consider upgrading your org limits
-
-# actions.deployNetworkError
-
-- Check your internet connection
-- Verify firewall and proxy settings
-- Try again after a few moments
-- Check Salesforce service status
+Failed to deploy package '%s': %s
 
 # actions.deployExecutionFailed
 
@@ -192,19 +57,6 @@ Failed to deploy package '%s': %s
 
 Failed to authenticate with Salesforce org '%s'
 
-# error.runPackageDirNotFound
-
-Entrypoint file not found at '%s'
-
-# error.runConfigNotFound
-
-Config file not found at '%s'
-
-# error.runExecutionFailed
-
-Script execution failed:
-%s
-
 # actions.runAuthenticationFailed
 
 - Verify the target org username/alias is correct
@@ -212,17 +64,10 @@ Script execution failed:
 - Check that the org has the necessary permissions
 - Ensure the org has Data Cloud enabled
 
-# actions.runPackageDirNotFound
+# error.runExecutionFailed
 
-- Verify the entrypoint file path is correct
-- Check that the file exists
-- Run 'init' command first to create a package
-
-# actions.runConfigNotFound
-
-- Verify the config file path is correct
-- Check if you're in the right directory
-- Use the default config path: payload/config.json
+Script execution failed:
+%s
 
 # actions.runExecutionFailed
 
