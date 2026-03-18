@@ -1,6 +1,6 @@
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages, Org } from '@salesforce/core';
-import { DatacodeBinaryChecker, type DatacodeRunExecutionResult } from '../utils/datacodeBinaryChecker.js';
+import { DatacodeBinaryExecutor, type DatacodeRunExecutionResult } from '../utils/datacodeBinaryExecutor.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
 import { sharedBaseFlags, type SharedResultProps } from './types.js';
 
@@ -50,7 +50,7 @@ export abstract class RunBase extends SfCommand<RunResult> {
       this.log(messages.getMessage('info.authenticated', [orgUsername]));
 
       this.spinner.start(messages.getMessage('info.runningPackage'));
-      const executionResult = await DatacodeBinaryChecker.executeBinaryRun(
+      const executionResult = await DatacodeBinaryExecutor.executeBinaryRun(
         packageDir,
         orgUsername,
         configFile,

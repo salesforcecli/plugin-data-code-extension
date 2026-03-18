@@ -1,6 +1,6 @@
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { DatacodeBinaryChecker, type ScanResult } from '../utils/datacodeBinaryChecker.js';
+import { DatacodeBinaryExecutor, type ScanResult } from '../utils/datacodeBinaryExecutor.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
 import { sharedBaseFlags } from './types.js';
 
@@ -36,7 +36,7 @@ export abstract class ScanBase extends SfCommand<ScanResult> {
       );
 
       this.spinner.start(messages.getMessage('info.executingScan'));
-      const executionResult = await DatacodeBinaryChecker.executeBinaryScan(
+      const executionResult = await DatacodeBinaryExecutor.executeBinaryScan(
         workingDir,
         config,
         dryRun,

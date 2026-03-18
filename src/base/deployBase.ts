@@ -1,6 +1,6 @@
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages, Org } from '@salesforce/core';
-import { DatacodeBinaryChecker, type DatacodeDeployExecutionResult } from '../utils/datacodeBinaryChecker.js';
+import { DatacodeBinaryExecutor, type DatacodeDeployExecutionResult } from '../utils/datacodeBinaryExecutor.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
 import { sharedBaseFlags, type SharedResultProps } from './types.js';
 
@@ -107,7 +107,7 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
       this.log(cmdMessages.getMessage('info.authenticated', [orgUsername]));
 
       this.spinner.start(cmdMessages.getMessage('info.deployingPackage'));
-      const executionResult = await DatacodeBinaryChecker.executeBinaryDeploy(
+      const executionResult = await DatacodeBinaryExecutor.executeBinaryDeploy(
         name,
         version,
         description,

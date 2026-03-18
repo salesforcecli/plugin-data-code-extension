@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages, SfError } from '@salesforce/core';
-import { DatacodeBinaryChecker, type DatacodeZipExecutionResult } from '../utils/datacodeBinaryChecker.js';
+import { DatacodeBinaryExecutor, type DatacodeZipExecutionResult } from '../utils/datacodeBinaryExecutor.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
 import { sharedBaseFlags, type SharedResultProps } from './types.js';
 
@@ -43,7 +43,7 @@ export abstract class ZipBase extends SfCommand<ZipResult> {
       );
 
       this.spinner.start(messages.getMessage('info.executingZip'));
-      const executionResult = await DatacodeBinaryChecker.executeBinaryZip(packageDir, network);
+      const executionResult = await DatacodeBinaryExecutor.executeBinaryZip(packageDir, network);
 
       this.spinner.stop();
 

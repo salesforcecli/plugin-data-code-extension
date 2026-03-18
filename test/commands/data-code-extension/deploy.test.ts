@@ -11,6 +11,7 @@ import FunctionDeploy from '../../../src/commands/data-code-extension/function/d
 import { PythonChecker } from '../../../src/utils/pythonChecker.js';
 import { PipChecker } from '../../../src/utils/pipChecker.js';
 import { DatacodeBinaryChecker } from '../../../src/utils/datacodeBinaryChecker.js';
+import { DatacodeBinaryExecutor } from '../../../src/utils/datacodeBinaryExecutor.js';
 
 describe('data-code-extension deploy', () => {
   const $$ = new TestContext();
@@ -67,8 +68,8 @@ describe('data-code-extension deploy', () => {
       path: '/usr/local/bin/datacustomcode',
     });
 
-    // Stub DatacodeBinaryChecker.executeBinaryDeploy
-    binaryDeployStub = $$.SANDBOX.stub(DatacodeBinaryChecker, 'executeBinaryDeploy').resolves({
+    // Stub DatacodeBinaryExecutor.executeBinaryDeploy
+    binaryDeployStub = $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryDeploy').resolves({
       stdout: 'Deployment successful',
       stderr: '',
       deploymentId: 'dep-123456',
@@ -88,11 +89,16 @@ describe('data-code-extension deploy', () => {
   describe('script deploy', () => {
     it('should deploy a script package successfully', async () => {
       await ScriptDeploy.run([
-        '--name', 'test-script',
-        '--version', '1.0.0',
-        '--description', 'Test script deployment',
-        '--package-dir', testDir,
-        '--target-org', 'test@example.com',
+        '--name',
+        'test-script',
+        '--version',
+        '1.0.0',
+        '--description',
+        'Test script deployment',
+        '--package-dir',
+        testDir,
+        '--target-org',
+        'test@example.com',
       ]);
 
       expect(sfCommandStubs.log.calledWith('Data Code Extension deployment completed successfully!')).to.be.true;
@@ -106,28 +112,38 @@ describe('data-code-extension deploy', () => {
     });
 
     it('should deploy with custom CPU size', async () => {
-
       await ScriptDeploy.run([
-        '--name', 'test-script',
-        '--version', '1.0.0',
-        '--description', 'Test script deployment',
-        '--package-dir', testDir,
-        '--target-org', 'test@example.com',
-        '--cpu-size', 'CPU_4XL',
+        '--name',
+        'test-script',
+        '--version',
+        '1.0.0',
+        '--description',
+        'Test script deployment',
+        '--package-dir',
+        testDir,
+        '--target-org',
+        'test@example.com',
+        '--cpu-size',
+        'CPU_4XL',
       ]);
 
       expect(binaryDeployStub.firstCall.args[5]).to.equal('CPU_4XL');
     });
 
     it('should deploy with network configuration', async () => {
-
       await ScriptDeploy.run([
-        '--name', 'test-script',
-        '--version', '1.0.0',
-        '--description', 'Test script deployment',
-        '--package-dir', testDir,
-        '--target-org', 'test@example.com',
-        '--network', 'host',
+        '--name',
+        'test-script',
+        '--version',
+        '1.0.0',
+        '--description',
+        'Test script deployment',
+        '--package-dir',
+        testDir,
+        '--target-org',
+        'test@example.com',
+        '--network',
+        'host',
       ]);
 
       expect(binaryDeployStub.firstCall.args[6]).to.equal('host');
@@ -139,11 +155,16 @@ describe('data-code-extension deploy', () => {
 
       try {
         await ScriptDeploy.run([
-          '--name', 'test-script',
-          '--version', '1.0.0',
-          '--description', 'Test script deployment',
-          '--package-dir', testDir,
-          '--target-org', 'test@example.com',
+          '--name',
+          'test-script',
+          '--version',
+          '1.0.0',
+          '--description',
+          'Test script deployment',
+          '--package-dir',
+          testDir,
+          '--target-org',
+          'test@example.com',
         ]);
         expect.fail('Should have thrown an error');
       } catch (error) {
@@ -156,14 +177,18 @@ describe('data-code-extension deploy', () => {
         new SfError('A deployment with name "test-script" and version "1.0.0" already exists', 'DeployConflict')
       );
 
-
       try {
         await ScriptDeploy.run([
-          '--name', 'test-script',
-          '--version', '1.0.0',
-          '--description', 'Test script deployment',
-          '--package-dir', testDir,
-          '--target-org', 'test@example.com',
+          '--name',
+          'test-script',
+          '--version',
+          '1.0.0',
+          '--description',
+          'Test script deployment',
+          '--package-dir',
+          testDir,
+          '--target-org',
+          'test@example.com',
         ]);
         expect.fail('Should have thrown an error');
       } catch (error) {
@@ -175,14 +200,19 @@ describe('data-code-extension deploy', () => {
 
   describe('function deploy', () => {
     it('should deploy a function package successfully', async () => {
-
       await FunctionDeploy.run([
-        '--name', 'test-function',
-        '--version', '1.0.0',
-        '--description', 'Test function deployment',
-        '--package-dir', testDir,
-        '--target-org', 'test@example.com',
-        '--function-invoke-opt', 'sync',
+        '--name',
+        'test-function',
+        '--version',
+        '1.0.0',
+        '--description',
+        'Test function deployment',
+        '--package-dir',
+        testDir,
+        '--target-org',
+        'test@example.com',
+        '--function-invoke-opt',
+        'sync',
       ]);
 
       expect(sfCommandStubs.log.calledWith('Data Code Extension deployment completed successfully!')).to.be.true;
@@ -191,29 +221,39 @@ describe('data-code-extension deploy', () => {
     });
 
     it('should deploy with function-invoke-opt flag', async () => {
-
       await FunctionDeploy.run([
-        '--name', 'test-function',
-        '--version', '1.0.0',
-        '--description', 'Test function deployment',
-        '--package-dir', testDir,
-        '--target-org', 'test@example.com',
-        '--function-invoke-opt', 'sync',
+        '--name',
+        'test-function',
+        '--version',
+        '1.0.0',
+        '--description',
+        'Test function deployment',
+        '--package-dir',
+        testDir,
+        '--target-org',
+        'test@example.com',
+        '--function-invoke-opt',
+        'sync',
       ]);
 
       expect(binaryDeployStub.firstCall.args[7]).to.equal('sync');
     });
 
     it('should validate CPU size options', async () => {
-
       try {
         await FunctionDeploy.run([
-          '--name', 'test-function',
-          '--version', '1.0.0',
-          '--description', 'Test function deployment',
-          '--package-dir', testDir,
-          '--target-org', 'test@example.com',
-          '--cpu-size', 'INVALID_SIZE',
+          '--name',
+          'test-function',
+          '--version',
+          '1.0.0',
+          '--description',
+          'Test function deployment',
+          '--package-dir',
+          testDir,
+          '--target-org',
+          'test@example.com',
+          '--cpu-size',
+          'INVALID_SIZE',
         ]);
         expect.fail('Should have thrown an error');
       } catch (error) {
@@ -223,19 +263,22 @@ describe('data-code-extension deploy', () => {
     });
 
     it('should handle quota exceeded errors', async () => {
-      binaryDeployStub.rejects(
-        new SfError('Deployment quota exceeded for the organization', 'DeployQuotaExceeded')
-      );
-
+      binaryDeployStub.rejects(new SfError('Deployment quota exceeded for the organization', 'DeployQuotaExceeded'));
 
       try {
         await FunctionDeploy.run([
-          '--name', 'test-function',
-          '--version', '1.0.0',
-          '--description', 'Test function deployment',
-          '--package-dir', testDir,
-          '--target-org', 'test@example.com',
-          '--function-invoke-opt', 'sync',
+          '--name',
+          'test-function',
+          '--version',
+          '1.0.0',
+          '--description',
+          'Test function deployment',
+          '--package-dir',
+          testDir,
+          '--target-org',
+          'test@example.com',
+          '--function-invoke-opt',
+          'sync',
         ]);
         expect.fail('Should have thrown an error');
       } catch (error) {
@@ -245,19 +288,22 @@ describe('data-code-extension deploy', () => {
     });
 
     it('should handle package validation errors', async () => {
-      binaryDeployStub.rejects(
-        new SfError('Package validation failed', 'DeployPackageInvalid')
-      );
-
+      binaryDeployStub.rejects(new SfError('Package validation failed', 'DeployPackageInvalid'));
 
       try {
         await FunctionDeploy.run([
-          '--name', 'test-function',
-          '--version', '1.0.0',
-          '--description', 'Test function deployment',
-          '--package-dir', testDir,
-          '--target-org', 'test@example.com',
-          '--function-invoke-opt', 'sync',
+          '--name',
+          'test-function',
+          '--version',
+          '1.0.0',
+          '--description',
+          'Test function deployment',
+          '--package-dir',
+          testDir,
+          '--target-org',
+          'test@example.com',
+          '--function-invoke-opt',
+          'sync',
         ]);
         expect.fail('Should have thrown an error');
       } catch (error) {
@@ -269,39 +315,51 @@ describe('data-code-extension deploy', () => {
 
   describe('deployment result handling', () => {
     it('should display deployment ID when available', async () => {
-
       await ScriptDeploy.run([
-        '--name', 'test-script',
-        '--version', '1.0.0',
-        '--description', 'Test script deployment',
-        '--package-dir', testDir,
-        '--target-org', 'test@example.com',
+        '--name',
+        'test-script',
+        '--version',
+        '1.0.0',
+        '--description',
+        'Test script deployment',
+        '--package-dir',
+        testDir,
+        '--target-org',
+        'test@example.com',
       ]);
 
       expect(sfCommandStubs.log.calledWith('Deployment successful')).to.be.true;
     });
 
     it('should display endpoint URL when available', async () => {
-
       await ScriptDeploy.run([
-        '--name', 'test-script',
-        '--version', '1.0.0',
-        '--description', 'Test script deployment',
-        '--package-dir', testDir,
-        '--target-org', 'test@example.com',
+        '--name',
+        'test-script',
+        '--version',
+        '1.0.0',
+        '--description',
+        'Test script deployment',
+        '--package-dir',
+        testDir,
+        '--target-org',
+        'test@example.com',
       ]);
 
       expect(sfCommandStubs.log.calledWith('Deployment successful')).to.be.true;
     });
 
     it('should return structured JSON result', async () => {
-
       const result = await ScriptDeploy.run([
-        '--name', 'test-script',
-        '--version', '1.0.0',
-        '--description', 'Test script deployment',
-        '--package-dir', testDir,
-        '--target-org', 'test@example.com',
+        '--name',
+        'test-script',
+        '--version',
+        '1.0.0',
+        '--description',
+        'Test script deployment',
+        '--package-dir',
+        testDir,
+        '--target-org',
+        'test@example.com',
         '--json',
       ]);
 
@@ -317,14 +375,18 @@ describe('data-code-extension deploy', () => {
     it('should handle Python not found', async () => {
       pythonCheckerStub.rejects(new SfError('Python 3.11+ is required', 'PythonNotFound'));
 
-
       try {
         await ScriptDeploy.run([
-          '--name', 'test-script',
-          '--version', '1.0.0',
-          '--description', 'Test script deployment',
-          '--package-dir', testDir,
-          '--target-org', 'test@example.com',
+          '--name',
+          'test-script',
+          '--version',
+          '1.0.0',
+          '--description',
+          'Test script deployment',
+          '--package-dir',
+          testDir,
+          '--target-org',
+          'test@example.com',
         ]);
         expect.fail('Should have thrown an error');
       } catch (error: unknown) {
@@ -345,14 +407,18 @@ describe('data-code-extension deploy', () => {
     it('should handle pip package not found', async () => {
       pipCheckerStub.rejects(new SfError('Package not found', 'PackageNotFound'));
 
-
       try {
         await ScriptDeploy.run([
-          '--name', 'test-script',
-          '--version', '1.0.0',
-          '--description', 'Test script deployment',
-          '--package-dir', testDir,
-          '--target-org', 'test@example.com',
+          '--name',
+          'test-script',
+          '--version',
+          '1.0.0',
+          '--description',
+          'Test script deployment',
+          '--package-dir',
+          testDir,
+          '--target-org',
+          'test@example.com',
         ]);
         expect.fail('Should have thrown an error');
       } catch (error: unknown) {
@@ -372,14 +438,18 @@ describe('data-code-extension deploy', () => {
     it('should handle binary not found', async () => {
       binaryCheckerStub.rejects(new SfError('Binary not found', 'BinaryNotFound'));
 
-
       try {
         await ScriptDeploy.run([
-          '--name', 'test-script',
-          '--version', '1.0.0',
-          '--description', 'Test script deployment',
-          '--package-dir', testDir,
-          '--target-org', 'test@example.com',
+          '--name',
+          'test-script',
+          '--version',
+          '1.0.0',
+          '--description',
+          'Test script deployment',
+          '--package-dir',
+          testDir,
+          '--target-org',
+          'test@example.com',
         ]);
         expect.fail('Should have thrown an error');
       } catch (error: unknown) {
@@ -397,18 +467,20 @@ describe('data-code-extension deploy', () => {
     });
 
     it('should handle network errors during deployment', async () => {
-      binaryDeployStub.rejects(
-        new SfError('Network error occurred during deployment', 'DeployNetworkError')
-      );
-
+      binaryDeployStub.rejects(new SfError('Network error occurred during deployment', 'DeployNetworkError'));
 
       try {
         await ScriptDeploy.run([
-          '--name', 'test-script',
-          '--version', '1.0.0',
-          '--description', 'Test script deployment',
-          '--package-dir', testDir,
-          '--target-org', 'test@example.com',
+          '--name',
+          'test-script',
+          '--version',
+          '1.0.0',
+          '--description',
+          'Test script deployment',
+          '--package-dir',
+          testDir,
+          '--target-org',
+          'test@example.com',
         ]);
         expect.fail('Should have thrown an error');
       } catch (error: unknown) {

@@ -99,7 +99,7 @@ export class PythonChecker {
    * Checks if the Python version meets the minimum requirements.
    *
    * @param versionInfo The Python version information
-   * @returns true if version is 3.11 or higher
+   * @returns true if version is 3.11
    */
   private static isVersionSufficient(versionInfo: PythonVersionInfo): boolean {
     if (versionInfo.major > this.MIN_MAJOR) {

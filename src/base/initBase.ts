@@ -1,6 +1,6 @@
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { DatacodeBinaryChecker, type DatacodeInitExecutionResult } from '../utils/datacodeBinaryChecker.js';
+import { DatacodeBinaryExecutor, type DatacodeInitExecutionResult } from '../utils/datacodeBinaryExecutor.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
 import { sharedBaseFlags, type SharedResultProps } from './types.js';
 
@@ -31,7 +31,7 @@ export abstract class InitBase extends SfCommand<InitResult> {
       );
 
       this.spinner.start(messages.getMessage('info.executingInit'));
-      const executionResult = await DatacodeBinaryChecker.executeBinaryInit(codeType, packageDir);
+      const executionResult = await DatacodeBinaryExecutor.executeBinaryInit(codeType, packageDir);
 
       this.spinner.stop();
       this.log(messages.getMessage('info.initExecuted', [packageDir]));

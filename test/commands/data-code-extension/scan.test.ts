@@ -8,6 +8,7 @@ import { SfError } from '@salesforce/core';
 import { PythonChecker } from '../../../src/utils/pythonChecker.js';
 import { PipChecker } from '../../../src/utils/pipChecker.js';
 import { DatacodeBinaryChecker } from '../../../src/utils/datacodeBinaryChecker.js';
+import { DatacodeBinaryExecutor } from '../../../src/utils/datacodeBinaryExecutor.js';
 import ScriptScan from '../../../src/commands/data-code-extension/script/scan.js';
 import FunctionScan from '../../../src/commands/data-code-extension/function/scan.js';
 
@@ -58,7 +59,7 @@ describe('data-code-extension scan commands', () => {
       });
 
       // Mock the scan execution
-      $$.SANDBOX.stub(DatacodeBinaryChecker, 'executeBinaryScan').resolves({
+      $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').resolves({
         stdout: 'Scan completed successfully',
         stderr: '',
         workingDirectory: process.cwd(),
@@ -106,7 +107,7 @@ describe('data-code-extension scan commands', () => {
       });
 
       // Mock the scan execution
-      const scanStub = $$.SANDBOX.stub(DatacodeBinaryChecker, 'executeBinaryScan').resolves({
+      const scanStub = $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').resolves({
         stdout: 'Scan completed successfully',
         stderr: '',
         workingDirectory: process.cwd(),
@@ -147,7 +148,7 @@ describe('data-code-extension scan commands', () => {
       });
 
       // Mock the scan execution
-      const scanStub = $$.SANDBOX.stub(DatacodeBinaryChecker, 'executeBinaryScan').resolves({
+      const scanStub = $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').resolves({
         stdout: 'Dry run completed',
         stderr: '',
         workingDirectory: process.cwd(),
@@ -188,7 +189,7 @@ describe('data-code-extension scan commands', () => {
       });
 
       // Mock the scan execution
-      const scanStub = $$.SANDBOX.stub(DatacodeBinaryChecker, 'executeBinaryScan').resolves({
+      const scanStub = $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').resolves({
         stdout: 'Scan completed without requirements',
         stderr: '',
         workingDirectory: process.cwd(),
@@ -228,7 +229,7 @@ describe('data-code-extension scan commands', () => {
       });
 
       // Mock the scan execution
-      const scanStub = $$.SANDBOX.stub(DatacodeBinaryChecker, 'executeBinaryScan').resolves({
+      const scanStub = $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').resolves({
         stdout: 'Dry run completed',
         stderr: '',
         workingDirectory: process.cwd(),
@@ -268,7 +269,7 @@ describe('data-code-extension scan commands', () => {
       });
 
       // Mock the scan execution to throw error
-      $$.SANDBOX.stub(DatacodeBinaryChecker, 'executeBinaryScan').rejects(
+      $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').rejects(
         new SfError('Current directory is not an initialized Data Code Extension package', 'NotInPackageDir')
       );
 
@@ -309,7 +310,7 @@ describe('data-code-extension scan commands', () => {
       });
 
       // Mock the scan execution to throw error
-      $$.SANDBOX.stub(DatacodeBinaryChecker, 'executeBinaryScan').rejects(
+      $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').rejects(
         new SfError(`Config file not found at ${tempConfigFile}`, 'ConfigNotFound')
       );
 
@@ -350,7 +351,7 @@ describe('data-code-extension scan commands', () => {
       });
 
       // Mock the scan execution
-      $$.SANDBOX.stub(DatacodeBinaryChecker, 'executeBinaryScan').resolves({
+      $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').resolves({
         stdout: 'Scan completed successfully',
         stderr: '',
         workingDirectory: process.cwd(),
@@ -397,7 +398,7 @@ describe('data-code-extension scan commands', () => {
       });
 
       // Mock the scan execution
-      $$.SANDBOX.stub(DatacodeBinaryChecker, 'executeBinaryScan').resolves({
+      $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').resolves({
         stdout: 'Scan completed successfully',
         stderr: '',
         workingDirectory: process.cwd(),
