@@ -3,15 +3,15 @@ import { Messages } from '@salesforce/core';
 import { InitBase } from '../../../base/initBase.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('data-code-extension', 'init');
+const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'init');
 
 export default class Init extends InitBase {
   public static readonly summary = messages.getMessage('summary', ['function']);
   public static readonly description = messages.getMessage('description');
-  // eslint-disable-next-line sf-plugin/no-missing-messages
-  public static readonly examples = messages.getMessages('examples').map(example =>
-    example.replace(/%s/g, 'function')
-  );
+  public static readonly examples = messages
+    // eslint-disable-next-line sf-plugin/no-missing-messages
+    .getMessages('examples')
+    .map((example) => example.replace(/%s/g, 'function'));
 
   public static readonly flags = {
     'package-dir': Flags.directory({
@@ -19,7 +19,7 @@ export default class Init extends InitBase {
       summary: messages.getMessage('flags.packageDir.summary'),
       description: messages.getMessage('flags.packageDir.description'),
       required: true,
-      exists: false,  // Allow non-existing directories (will be created)
+      exists: false, // Allow non-existing directories (will be created)
     }),
   };
 

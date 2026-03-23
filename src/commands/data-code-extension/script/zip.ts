@@ -3,7 +3,7 @@ import { Messages } from '@salesforce/core';
 import { ZipBase } from '../../../base/zipBase.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('data-code-extension', 'zip');
+const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'zip');
 
 export default class Zip extends ZipBase {
   public static readonly summary = messages.getMessage('summary', ['script']);

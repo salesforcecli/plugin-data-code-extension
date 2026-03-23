@@ -3,7 +3,7 @@ import { Messages } from '@salesforce/core';
 import { DeployBase, type BaseDeployFlags } from '../../../base/deployBase.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('data-code-extension', 'deploy');
+const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'deploy');
 
 export type FunctionDeployFlags = BaseDeployFlags & {
   'function-invoke-opt': string;

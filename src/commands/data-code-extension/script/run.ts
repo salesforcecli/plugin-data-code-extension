@@ -3,7 +3,7 @@ import { Messages } from '@salesforce/core';
 import { RunBase } from '../../../base/runBase.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('data-code-extension', 'run');
+const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'run');
 
 export default class Run extends RunBase {
   public static readonly summary = messages.getMessage('summary', ['script']);
