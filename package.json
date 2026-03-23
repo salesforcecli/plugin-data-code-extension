@@ -1,5 +1,5 @@
 {
-  "name": "data-code-extension",
+  "name": "@salesforce/plugin-data-code-extension",
   "description": "Data Cloud Code Extension",
   "version": "1.0.0",
   "dependencies": {
@@ -43,9 +43,6 @@
       "@oclif/plugin-help"
     ],
     "topics": {
-      "hello": {
-        "description": "Commands to say hello."
-      },
       "data-code-extension": {
         "description": "Commands for Data Cloud Code Extension."
       },

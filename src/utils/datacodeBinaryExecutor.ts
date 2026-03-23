@@ -9,7 +9,7 @@ import { type DatacodeBinaryInfo } from './datacodeBinaryChecker.js';
 const execAsync = promisify(exec);
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('data-code-extension', 'datacodeBinaryExecutor');
+const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'datacodeBinaryExecutor');
 
 export type DatacodeInitExecutionResult = {
   stdout: string;

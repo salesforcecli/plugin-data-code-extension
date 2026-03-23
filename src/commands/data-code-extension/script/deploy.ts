@@ -2,7 +2,7 @@ import { Messages } from '@salesforce/core';
 import { DeployBase } from '../../../base/deployBase.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('data-code-extension', 'deploy');
+const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'deploy');
 
 // eslint-disable-next-line sf-plugin/only-extend-SfCommand
 export default class Deploy extends DeployBase {

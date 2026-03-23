@@ -3,18 +3,18 @@ import { Messages } from '@salesforce/core';
 import { ScanBase } from '../../../base/scanBase.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('data-code-extension', 'scan');
+const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'scan');
 
 export default class Scan extends ScanBase {
   public static readonly summary = messages.getMessage('summary', ['function']);
   public static readonly description = messages.getMessage('description');
-  // eslint-disable-next-line sf-plugin/no-missing-messages
-  public static readonly examples = messages.getMessages('examples').map(example =>
-    example.replace(/%s/g, 'function')
-  );
+  public static readonly examples = messages
+    // eslint-disable-next-line sf-plugin/no-missing-messages
+    .getMessages('examples')
+    .map((example) => example.replace(/%s/g, 'function'));
 
   public static readonly flags = {
-    'entrypoint': Flags.string({
+    entrypoint: Flags.string({
       char: 'e',
       summary: messages.getMessage('flags.entrypoint.summary'),
       description: messages.getMessage('flags.entrypoint.description'),

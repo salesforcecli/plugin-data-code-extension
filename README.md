@@ -1,6 +1,6 @@
-# data-code-extension
+# plugin-data-code-extension
 
-[![NPM](https://img.shields.io/npm/v/data-code-extension.svg?label=data-code-extension)](https://www.npmjs.com/package/data-code-extension) [![Downloads/week](https://img.shields.io/npm/dw/data-code-extension.svg)](https://npmjs.org/package/data-code-extension) [![License](https://img.shields.io/badge/License-BSD%203--Clause-brightgreen.svg)](https://raw.githubusercontent.com/salesforcecli/data-code-extension/main/LICENSE.txt)
+[![NPM](https://img.shields.io/npm/v/@salesforce/plugin-data-code-extension.svg?label=@salesforce/plugin-data-code-extension)](https://www.npmjs.com/package/@salesforce/plugin-data-code-extension) [![Downloads/week](https://img.shields.io/npm/dw/@salesforce/plugin-data-code-extension.svg)](https://npmjs.org/package/@salesforce/plugin-data-code-extension) [![License](https://img.shields.io/badge/License-BSD%203--Clause-brightgreen.svg)](https://raw.githubusercontent.com/salesforcecli/@salesforce/plugin-data-code-extension/main/LICENSE.txt)
 
 # Description
 
@@ -11,7 +11,7 @@ We always recommend using the latest version of these commands bundled with the 
 ## Install
 
 ```bash
-sf plugins install data-code-extension@x.y.z
+sf plugins install @salesforce/plugin-data-code-extension@x.y.z
 ```
 
 ## Issues

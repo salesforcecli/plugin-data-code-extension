@@ -6,7 +6,7 @@ import { Messages } from '@salesforce/core';
 const execAsync = promisify(exec);
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('data-code-extension', 'pipChecker');
+const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'pipChecker');
 
 export type PipPackageInfo = {
   name: string;
