@@ -5,13 +5,21 @@ import { InitBase } from '../../../base/initBase.js';
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'init');
 
+// eslint-disable-next-line sf-plugin/only-extend-SfCommand
 export default class Init extends InitBase {
   public static readonly summary = messages.getMessage('summary', ['script']);
   public static readonly description = messages.getMessage('description');
-  // eslint-disable-next-line sf-plugin/no-missing-messages
-  public static readonly examples = messages.getMessages('examples').map((example) => example.replace(/%s/g, 'script'));
+  public static readonly examples = ((): string[] => {
+    try {
+      // eslint-disable-next-line sf-plugin/no-missing-messages
+      return messages.getMessages('examples').map((example) => example.replace(/%s/g, 'script'));
+    } catch {
+      return [];
+    }
+  })();
 
   public static readonly flags = {
+    ...InitBase.flags,
     'package-dir': Flags.directory({
       char: 'p',
       summary: messages.getMessage('flags.packageDir.summary'),
