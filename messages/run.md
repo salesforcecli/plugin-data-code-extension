@@ -1,6 +1,6 @@
 # summary
 
-Run a Data Code Extension %s package locally using data from your Salesforce Org
+Run a Data Code Extension %s package locally using data from your Salesforce Org.
 
 # description
 
@@ -8,7 +8,7 @@ Executes an initialized Data Cloud custom code package against a Salesforce org.
 
 # examples
 
-- Run a %s package against the default org:
+- Run a %s package against the org with alias "myorg":
 
   <%= config.bin %> data-code-extension %s run --entrypoint ./my-package --target-org myorg
 
@@ -90,7 +90,7 @@ Target Salesforce org to run against.
 
 # flags.targetOrg.description
 
-The alias of the Salesforce org where you want to run the Data Cloud custom code package. The org must have Data Cloud enabled and appropriate permissions.
+The alias or username of the Salesforce org where you want to run the Data Cloud custom code package. The org must have Data Cloud enabled and appropriate permissions.
 
 # flags.configFile.summary
 
