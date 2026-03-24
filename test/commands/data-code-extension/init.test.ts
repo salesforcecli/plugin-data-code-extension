@@ -66,7 +66,17 @@ describe('data-code-extension init commands', () => {
       // If Python 3.11+ is not installed, pip package is missing, binary is not found, or init fails, verify the error is handled correctly
       expect(error).to.have.property('name');
       if (error instanceof Error) {
-        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable', 'InitPermissionDenied', 'InitDirectoryExists', 'InitExecutionFailed']);
+        expect(error.name).to.be.oneOf([
+          'PythonNotFound',
+          'PythonVersionMismatch',
+          'PipNotFound',
+          'PackageNotInstalled',
+          'BinaryNotFound',
+          'BinaryNotExecutable',
+          'InitPermissionDenied',
+          'InitDirectoryExists',
+          'InitExecutionFailed',
+        ]);
         expect(error.message).to.be.a('string');
         if ('actions' in error && error.actions) {
           expect(error.actions).to.be.an('array');
@@ -75,9 +85,9 @@ describe('data-code-extension init commands', () => {
     }
   });
 
-  it('returns JSON result when --json flag is used for script init', async () => {
+  it('returns structured result for script init', async () => {
     try {
-      const result = await ScriptInit.run(['--json', '--package-dir', './test-json']);
+      const result = await ScriptInit.run(['--package-dir', './test-json']);
 
       // Should return a structured result
       expect(result).to.be.an('object');
@@ -86,7 +96,6 @@ describe('data-code-extension init commands', () => {
       expect(result).to.have.property('message');
       // packageInfo may or may not be present depending on whether package is installed
     } catch (error) {
-      // Even errors should be structured when using --json
       expect(error).to.have.property('name');
       if (error instanceof Error) {
         expect(error.name).to.be.a('string');
@@ -104,7 +113,17 @@ describe('data-code-extension init commands', () => {
     } catch (error) {
       // Handle case where Python is not installed
       if (error instanceof Error) {
-        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable', 'InitPermissionDenied', 'InitDirectoryExists', 'InitExecutionFailed']);
+        expect(error.name).to.be.oneOf([
+          'PythonNotFound',
+          'PythonVersionMismatch',
+          'PipNotFound',
+          'PackageNotInstalled',
+          'BinaryNotFound',
+          'BinaryNotExecutable',
+          'InitPermissionDenied',
+          'InitDirectoryExists',
+          'InitExecutionFailed',
+        ]);
       }
     }
   });
@@ -117,7 +136,17 @@ describe('data-code-extension init commands', () => {
     } catch (error) {
       // Handle case where Python is not installed
       if (error instanceof Error) {
-        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable', 'InitPermissionDenied', 'InitDirectoryExists', 'InitExecutionFailed']);
+        expect(error.name).to.be.oneOf([
+          'PythonNotFound',
+          'PythonVersionMismatch',
+          'PipNotFound',
+          'PackageNotInstalled',
+          'BinaryNotFound',
+          'BinaryNotExecutable',
+          'InitPermissionDenied',
+          'InitDirectoryExists',
+          'InitExecutionFailed',
+        ]);
       }
     }
   });
@@ -130,7 +159,17 @@ describe('data-code-extension init commands', () => {
     } catch (error) {
       // Handle case where Python is not installed
       if (error instanceof Error) {
-        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable', 'InitPermissionDenied', 'InitDirectoryExists', 'InitExecutionFailed']);
+        expect(error.name).to.be.oneOf([
+          'PythonNotFound',
+          'PythonVersionMismatch',
+          'PipNotFound',
+          'PackageNotInstalled',
+          'BinaryNotFound',
+          'BinaryNotExecutable',
+          'InitPermissionDenied',
+          'InitDirectoryExists',
+          'InitExecutionFailed',
+        ]);
       }
     }
   });
