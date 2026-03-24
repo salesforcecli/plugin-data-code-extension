@@ -1,6 +1,6 @@
 # summary
 
-Initialize the Data Code Extension %s package
+Initialize the Data Code Extension %s package.
 
 # description
 
@@ -46,7 +46,7 @@ Package initialized successfully at '%s'
 
 # info.fileCreated
 
-  Created: %s
+Created: %s
 
 # info.initCompleted
 
@@ -66,5 +66,4 @@ Directory path where the package will be created.
 
 # flags.packageDir.description
 
-The directory path where the new package will be initialized.
-The directory will be created if it does not exist.
+The directory path where the new package will be initialized. The directory will be created if it doesn't exist.

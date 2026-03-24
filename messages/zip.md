@@ -1,6 +1,6 @@
 # summary
 
-Create a compressed archive of the Data Code Extension %s package
+Create a compressed archive of the Data Code Extension %s package.
 
 # description
 

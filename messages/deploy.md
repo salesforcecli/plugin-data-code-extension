@@ -1,6 +1,6 @@
 # summary
 
-Deploy a Data Code Extension %s package to a Salesforce org
+Deploy a Data Code Extension %s package to a Salesforce org.
 
 # description
 
@@ -8,17 +8,17 @@ Deploys an initialized and packaged Data Cloud code extension to a Salesforce or
 
 # examples
 
-- Deploy a %s package to the default org:
+- Deploy a %s package to the org with alias "myorg":
 
-  <%= config.bin %> data-code-extension %s deploy --name "my-package" --version "1.0.0" --description "My package" --package-dir ./package --target-org myorg
+  <%= config.bin %> data-code-extension %s deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./package --target-org myorg
 
-- Deploy with specific CPU size:
+- Deploy with specific a CPU size:
 
-  <%= config.bin %> data-code-extension %s deploy --name "my-package" --version "1.0.0" --description "My package" --package-dir ./package --target-org myorg --cpu-size CPU_4XL
+  <%= config.bin %> data-code-extension %s deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./package --target-org myorg --cpu-size CPU_4XL
 
 - Deploy with network configuration for Jupyter notebooks:
 
-  <%= config.bin %> data-code-extension %s deploy --name "my-package" --version "1.0.0" --description "My package" --package-dir ./package --target-org myorg --network "host"
+  <%= config.bin %> data-code-extension %s deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./package --target-org myorg --network host
 
 # info.checkingPython
 
@@ -86,7 +86,7 @@ Name of the package to deploy.
 
 # flags.name.description
 
-The unique name identifier for your Data Cloud custom code package. This name will be used to identify the deployment in your Salesforce org.
+The unique name identifier for your Data Cloud custom code package. This name is used to identify the deployment in your Salesforce org.
 
 # flags.version.summary
 
@@ -94,7 +94,7 @@ Version of the package to deploy.
 
 # flags.version.description
 
-The version string for your package deployment. Use semantic versioning (e.g., 1.0.0) to track different releases of your code.
+The version string for your package deployment. Use semantic versioning (such as 1.0.0) to track different releases of your code.
 
 # flags.description.summary
 
@@ -118,7 +118,7 @@ Directory containing the packaged code.
 
 # flags.packageDir.description
 
-The path to the directory containing your initialized and zipped Data Cloud custom code package. This directory should contain the package files created by the 'zip' command.
+The path to the directory containing your initialized and zipped Data Cloud custom code package. This directory contains the package files created by the 'zip' command.
 
 # flags.cpuSize.summary
 
@@ -134,7 +134,7 @@ Target Salesforce org for deployment.
 
 # flags.targetOrg.description
 
-The alias of the Salesforce org where you want to deploy the Data Cloud custom code package. The org must have Data Cloud enabled and appropriate permissions.
+The alias or username of the Salesforce org where you want to deploy the Data Cloud custom code package. The org must have Data Cloud enabled and appropriate permissions.
 
 # flags.functionInvokeOpt.summary
 
