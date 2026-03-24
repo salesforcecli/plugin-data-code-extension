@@ -1,3 +1,18 @@
+/*
+ * Copyright 2026, Salesforce, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { TestContext } from '@salesforce/core/testSetup';
 import { expect } from 'chai';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
@@ -66,7 +81,17 @@ describe('data-code-extension init commands', () => {
       // If Python 3.11+ is not installed, pip package is missing, binary is not found, or init fails, verify the error is handled correctly
       expect(error).to.have.property('name');
       if (error instanceof Error) {
-        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable', 'InitPermissionDenied', 'InitDirectoryExists', 'InitExecutionFailed']);
+        expect(error.name).to.be.oneOf([
+          'PythonNotFound',
+          'PythonVersionMismatch',
+          'PipNotFound',
+          'PackageNotInstalled',
+          'BinaryNotFound',
+          'BinaryNotExecutable',
+          'InitPermissionDenied',
+          'InitDirectoryExists',
+          'InitExecutionFailed',
+        ]);
         expect(error.message).to.be.a('string');
         if ('actions' in error && error.actions) {
           expect(error.actions).to.be.an('array');
@@ -104,7 +129,17 @@ describe('data-code-extension init commands', () => {
     } catch (error) {
       // Handle case where Python is not installed
       if (error instanceof Error) {
-        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable', 'InitPermissionDenied', 'InitDirectoryExists', 'InitExecutionFailed']);
+        expect(error.name).to.be.oneOf([
+          'PythonNotFound',
+          'PythonVersionMismatch',
+          'PipNotFound',
+          'PackageNotInstalled',
+          'BinaryNotFound',
+          'BinaryNotExecutable',
+          'InitPermissionDenied',
+          'InitDirectoryExists',
+          'InitExecutionFailed',
+        ]);
       }
     }
   });
@@ -117,7 +152,17 @@ describe('data-code-extension init commands', () => {
     } catch (error) {
       // Handle case where Python is not installed
       if (error instanceof Error) {
-        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable', 'InitPermissionDenied', 'InitDirectoryExists', 'InitExecutionFailed']);
+        expect(error.name).to.be.oneOf([
+          'PythonNotFound',
+          'PythonVersionMismatch',
+          'PipNotFound',
+          'PackageNotInstalled',
+          'BinaryNotFound',
+          'BinaryNotExecutable',
+          'InitPermissionDenied',
+          'InitDirectoryExists',
+          'InitExecutionFailed',
+        ]);
       }
     }
   });
@@ -130,7 +175,17 @@ describe('data-code-extension init commands', () => {
     } catch (error) {
       // Handle case where Python is not installed
       if (error instanceof Error) {
-        expect(error.name).to.be.oneOf(['PythonNotFound', 'PythonVersionMismatch', 'PipNotFound', 'PackageNotInstalled', 'BinaryNotFound', 'BinaryNotExecutable', 'InitPermissionDenied', 'InitDirectoryExists', 'InitExecutionFailed']);
+        expect(error.name).to.be.oneOf([
+          'PythonNotFound',
+          'PythonVersionMismatch',
+          'PipNotFound',
+          'PackageNotInstalled',
+          'BinaryNotFound',
+          'BinaryNotExecutable',
+          'InitPermissionDenied',
+          'InitDirectoryExists',
+          'InitExecutionFailed',
+        ]);
       }
     }
   });

@@ -1,6 +1,6 @@
 # plugin-data-code-extension
 
-[![NPM](https://img.shields.io/npm/v/@salesforce/plugin-data-code-extension.svg?label=@salesforce/plugin-data-code-extension)](https://www.npmjs.com/package/@salesforce/plugin-data-code-extension) [![Downloads/week](https://img.shields.io/npm/dw/@salesforce/plugin-data-code-extension.svg)](https://npmjs.org/package/@salesforce/plugin-data-code-extension) [![License](https://img.shields.io/badge/License-BSD%203--Clause-brightgreen.svg)](https://raw.githubusercontent.com/salesforcecli/@salesforce/plugin-data-code-extension/main/LICENSE.txt)
+[![NPM](https://img.shields.io/npm/v/@salesforce/plugin-data-code-extension.svg?label=@salesforce/plugin-data-code-extension)](https://www.npmjs.com/package/@salesforce/plugin-data-code-extension) [![Downloads/week](https://img.shields.io/npm/dw/@salesforce/plugin-data-code-extension.svg)](https://npmjs.org/package/@salesforce/plugin-data-code-extension) [![License](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/license/apache-2-0)
 
 # Description
 
