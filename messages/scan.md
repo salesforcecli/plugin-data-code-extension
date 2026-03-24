@@ -1,6 +1,6 @@
 # summary
 
-Scan the Data Code Extension %s package for permissions and dependencies
+Scan the Data Code Extension %s package for permissions and dependencies.
 
 # description
 
@@ -24,7 +24,7 @@ Scans Python files in an initialized Data Code Extension package directory to id
 
   <%= config.bin %> data-code-extension %s scan --dry-run
 
-- Scan without updating requirements.txt:
+- Scan without updating the requirements.txt file:
 
   <%= config.bin %> data-code-extension %s scan --no-requirements
 
@@ -62,15 +62,15 @@ Package scanned successfully in '%s'
 
 # info.permissionFound
 
-  Permission required: %s
+Permission required: %s
 
 # info.requirementFound
 
-  Dependency found: %s
+Dependency found: %s
 
 # info.fileScanned
 
-  Scanned: %s
+Scanned: %s
 
 # info.scanCompleted
 
@@ -160,4 +160,4 @@ Skip updating the requirements.txt file.
 
 # flags.noRequirements.description
 
-When set, only scans for permissions and updates config.json, but does not update the requirements.txt file with discovered dependencies.
+When set, only scans for permissions and updates config.json, but doesn't update the requirements.txt file with discovered dependencies.
