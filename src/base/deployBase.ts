@@ -9,7 +9,7 @@ const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension',
 
 export type BaseDeployFlags = {
   name: string;
-  version: string;
+  'package-version': string;
   description: string;
   'package-dir': string;
   'target-org': Org;
@@ -36,9 +36,9 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
       description: messages.getMessage('flags.name.description'),
       required: true,
     }),
-    version: Flags.string({
-      summary: messages.getMessage('flags.version.summary'),
-      description: messages.getMessage('flags.version.description'),
+    'package-version': Flags.string({
+      summary: messages.getMessage('flags.packageVersion.summary'),
+      description: messages.getMessage('flags.packageVersion.description'),
       required: true,
     }),
     description: Flags.string({
@@ -79,7 +79,7 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
     const cmdMessages = this.getMessages();
 
     const name = flags.name;
-    const version = flags.version;
+    const version = flags['package-version'];
     const description = flags.description;
     const packageDir = flags['package-dir'];
     const targetOrg = flags['target-org'];

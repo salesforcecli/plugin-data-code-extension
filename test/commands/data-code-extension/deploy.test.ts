@@ -91,7 +91,7 @@ describe('data-code-extension deploy', () => {
       await ScriptDeploy.run([
         '--name',
         'test-script',
-        '--version',
+        '--package-version',
         '1.0.0',
         '--description',
         'Test script deployment',
@@ -115,7 +115,7 @@ describe('data-code-extension deploy', () => {
       await ScriptDeploy.run([
         '--name',
         'test-script',
-        '--version',
+        '--package-version',
         '1.0.0',
         '--description',
         'Test script deployment',
@@ -134,7 +134,7 @@ describe('data-code-extension deploy', () => {
       await ScriptDeploy.run([
         '--name',
         'test-script',
-        '--version',
+        '--package-version',
         '1.0.0',
         '--description',
         'Test script deployment',
@@ -157,7 +157,7 @@ describe('data-code-extension deploy', () => {
         await ScriptDeploy.run([
           '--name',
           'test-script',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test script deployment',
@@ -181,7 +181,7 @@ describe('data-code-extension deploy', () => {
         await ScriptDeploy.run([
           '--name',
           'test-script',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test script deployment',
@@ -203,7 +203,7 @@ describe('data-code-extension deploy', () => {
       await FunctionDeploy.run([
         '--name',
         'test-function',
-        '--version',
+        '--package-version',
         '1.0.0',
         '--description',
         'Test function deployment',
@@ -224,7 +224,7 @@ describe('data-code-extension deploy', () => {
       await FunctionDeploy.run([
         '--name',
         'test-function',
-        '--version',
+        '--package-version',
         '1.0.0',
         '--description',
         'Test function deployment',
@@ -244,7 +244,7 @@ describe('data-code-extension deploy', () => {
         await FunctionDeploy.run([
           '--name',
           'test-function',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test function deployment',
@@ -269,7 +269,7 @@ describe('data-code-extension deploy', () => {
         await FunctionDeploy.run([
           '--name',
           'test-function',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test function deployment',
@@ -294,7 +294,7 @@ describe('data-code-extension deploy', () => {
         await FunctionDeploy.run([
           '--name',
           'test-function',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test function deployment',
@@ -318,7 +318,7 @@ describe('data-code-extension deploy', () => {
       await ScriptDeploy.run([
         '--name',
         'test-script',
-        '--version',
+        '--package-version',
         '1.0.0',
         '--description',
         'Test script deployment',
@@ -335,7 +335,7 @@ describe('data-code-extension deploy', () => {
       await ScriptDeploy.run([
         '--name',
         'test-script',
-        '--version',
+        '--package-version',
         '1.0.0',
         '--description',
         'Test script deployment',
@@ -352,7 +352,7 @@ describe('data-code-extension deploy', () => {
       const result = await ScriptDeploy.run([
         '--name',
         'test-script',
-        '--version',
+        '--package-version',
         '1.0.0',
         '--description',
         'Test script deployment',
@@ -378,7 +378,7 @@ describe('data-code-extension deploy', () => {
         await ScriptDeploy.run([
           '--name',
           'test-script',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test script deployment',
@@ -410,7 +410,7 @@ describe('data-code-extension deploy', () => {
         await ScriptDeploy.run([
           '--name',
           'test-script',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test script deployment',
@@ -441,7 +441,7 @@ describe('data-code-extension deploy', () => {
         await ScriptDeploy.run([
           '--name',
           'test-script',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test script deployment',
@@ -472,7 +472,7 @@ describe('data-code-extension deploy', () => {
         await ScriptDeploy.run([
           '--name',
           'test-script',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test script deployment',
