@@ -3,7 +3,7 @@ import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages, SfError } from '@salesforce/core';
 import { DatacodeBinaryExecutor, type DatacodeZipExecutionResult } from '../utils/datacodeBinaryExecutor.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
-import { sharedBaseFlags, type SharedResultProps } from './types.js';
+import { type SharedResultProps } from './types.js';
 
 export type BaseZipFlags = {
   'package-dir': string;
@@ -17,8 +17,7 @@ export type ZipResult = SharedResultProps & {
 
 // eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
 export abstract class ZipBase extends SfCommand<ZipResult> {
-  // Override baseFlags to hide global flags
-  public static readonly baseFlags = sharedBaseFlags;
+  public static enableJsonFlag = false;
 
   public async run(): Promise<ZipResult> {
     const { flags } = (await this.parse(this.constructor as typeof ZipBase)) as unknown as { flags: BaseZipFlags };

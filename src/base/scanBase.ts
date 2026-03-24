@@ -2,7 +2,6 @@ import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { DatacodeBinaryExecutor, type ScanResult } from '../utils/datacodeBinaryExecutor.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
-import { sharedBaseFlags } from './types.js';
 
 export type BaseScanFlags = {
   entrypoint?: string;
@@ -13,8 +12,7 @@ export type BaseScanFlags = {
 
 // eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
 export abstract class ScanBase extends SfCommand<ScanResult> {
-  // Override baseFlags to hide global flags
-  public static readonly baseFlags = sharedBaseFlags;
+  public static enableJsonFlag = false;
 
   public async run(): Promise<ScanResult> {
     const { flags } = (await this.parse(this.constructor as typeof ScanBase)) as unknown as { flags: BaseScanFlags };

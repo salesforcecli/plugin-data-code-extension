@@ -2,7 +2,7 @@ import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages, Org } from '@salesforce/core';
 import { DatacodeBinaryExecutor, type DatacodeDeployExecutionResult } from '../utils/datacodeBinaryExecutor.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
-import { sharedBaseFlags, type SharedResultProps } from './types.js';
+import { type SharedResultProps } from './types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'deploy');
@@ -27,8 +27,7 @@ export type DeployResult = SharedResultProps & {
 
 // eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
 export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlags> extends SfCommand<DeployResult> {
-  // Override baseFlags to hide global flags
-  public static readonly baseFlags = sharedBaseFlags;
+  public static enableJsonFlag = false;
 
   public static readonly flags = {
     name: Flags.string({

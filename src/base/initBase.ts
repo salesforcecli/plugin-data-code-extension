@@ -2,7 +2,7 @@ import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { DatacodeBinaryExecutor, type DatacodeInitExecutionResult } from '../utils/datacodeBinaryExecutor.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
-import { sharedBaseFlags, type SharedResultProps } from './types.js';
+import { type SharedResultProps } from './types.js';
 
 export type BaseInitFlags = {
   'package-dir': string;
@@ -14,8 +14,7 @@ export type InitResult = SharedResultProps & {
 
 // eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
 export abstract class InitBase extends SfCommand<InitResult> {
-  // Override baseFlags to hide global flags
-  public static readonly baseFlags = sharedBaseFlags;
+  public static enableJsonFlag = false;
 
   public async run(): Promise<InitResult> {
     const { flags } = (await this.parse(this.constructor as typeof InitBase)) as unknown as { flags: BaseInitFlags };
