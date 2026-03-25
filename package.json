@@ -1,7 +1,7 @@
 {
   "name": "@salesforce/plugin-data-code-extension",
   "description": "Data Cloud Code Extension",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "dependencies": {
     "@oclif/core": "^4",
     "@salesforce/core": "^8.2.7",

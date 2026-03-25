@@ -82,51 +82,45 @@ sf plugins
 
 ## `sf data-code-extension function deploy`
 
-Deploy a Data Code Extension function package to a Salesforce org
+Deploy a Data Code Extension function package to a Salesforce org.
 
 ```
 USAGE
-  $ sf data-code-extension function deploy -n <value> -v <value> -d <value> -p <value> -o <value>
-    --function-invoke-opt <value> [--json] [--flags-dir <value>] [--cpu-size CPU_L|CPU_XL|CPU_2XL|CPU_4XL]
-    [--network <value>]
+  $ sf data-code-extension function deploy -n <value> --package-version <value> -d <value> -p <value> -o <value> --function-invoke-opt
+    UnstructuredChunking [--flags-dir <value>] [--network <value>] [--cpu-size CPU_L|CPU_XL|CPU_2XL|CPU_4XL]
 
 FLAGS
-  -d, --description=<value>          (required) Description of the package.
-  -n, --name=<value>                 (required) Name of the package to deploy.
-  -o, --target-org=<value>           (required) Target Salesforce org for deployment.
-  -p, --package-dir=<value>          (required) Directory containing the packaged code.
-  -v, --version=<value>              (required) Version of the package to deploy.
-      --cpu-size=<option>            [default: CPU_2XL] CPU size for the deployment.
-                                     <options: CPU_L|CPU_XL|CPU_2XL|CPU_4XL>
-      --function-invoke-opt=<value>  (required) Function invocation option (function packages only).
-      --network=<value>              Network configuration for Jupyter notebooks.
+  -d, --description=<value>           (required) Description of the package.
+  -n, --name=<value>                  (required) Name of the package to deploy.
+  -o, --target-org=<value>            (required) Target Salesforce org for deployment.
+  -p, --package-dir=<value>           (required) Directory containing the packaged code.
+      --cpu-size=<option>             [default: CPU_2XL] CPU size for the deployment.
+                                      <options: CPU_L|CPU_XL|CPU_2XL|CPU_4XL>
+      --function-invoke-opt=<option>  (required) Function invocation option (function packages only).
+                                      <options: UnstructuredChunking>
+      --network=<value>               Network configuration for Jupyter notebooks.
+      --package-version=<value>       (required) Version of the package to deploy.
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
-  --json               Format output as json.
 
 DESCRIPTION
-  Deploy a Data Code Extension function package to a Salesforce org
+  Deploy a Data Code Extension function package to a Salesforce org.
 
-  Deploys an initialized and packaged Data Cloud custom code to a Salesforce org. The package must be initialized and
+  Deploys an initialized and packaged Data Cloud code extension to a Salesforce org. The package must be initialized and
   zipped before deployment. Supports both script and function packages with configurable CPU resources and network
   settings.
 
 EXAMPLES
-  Deploy a function package to the default org:
+  Deploy a function package to the org with alias "myorg":
 
-    $ sf data-code-extension function deploy --name "my-package" --version "1.0.0" --description "My package" \
-      --package-dir ./package --target-org myorg
+    $ sf data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" \
+      --package-dir ./package --target-org myorg --function-invoke-opt UnstructuredChunking
 
-  Deploy with specific CPU size:
+  Deploy with a specific CPU size:
 
-    $ sf data-code-extension function deploy --name "my-package" --version "1.0.0" --description "My package" \
-      --package-dir ./package --target-org myorg --cpu-size CPU_4XL
-
-  Deploy with network configuration for Jupyter notebooks:
-
-    $ sf data-code-extension function deploy --name "my-package" --version "1.0.0" --description "My package" \
-      --package-dir ./package --target-org myorg --network "host"
+    $ sf data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" \
+      --package-dir ./package --target-org myorg --cpu-size CPU_4XL --function-invoke-opt UnstructuredChunking
 
 FLAG DESCRIPTIONS
   -d, --description=<value>  Description of the package.
@@ -136,64 +130,61 @@ FLAG DESCRIPTIONS
 
   -n, --name=<value>  Name of the package to deploy.
 
-    The unique name identifier for your Data Cloud custom code package. This name will be used to identify the
-    deployment in your Salesforce org.
+    The unique name identifier for your Data Cloud custom code package. This name is used to identify the deployment in
+    your Salesforce org.
 
   -o, --target-org=<value>  Target Salesforce org for deployment.
 
-    The alias of the Salesforce org where you want to deploy the Data Cloud custom code package. The org must have Data
-    Cloud enabled and appropriate permissions.
+    The alias or username of the Salesforce org where you want to deploy the Data Cloud custom code package. The org
+    must have Data Cloud enabled and appropriate permissions.
 
   -p, --package-dir=<value>  Directory containing the packaged code.
 
     The path to the directory containing your initialized and zipped Data Cloud custom code package. This directory
-    should contain the package files created by the 'zip' command.
-
-  -v, --version=<value>  Version of the package to deploy.
-
-    The version string for your package deployment. Use semantic versioning (e.g., 1.0.0) to track different releases
-    of your code.
+    contains the package files created by the 'zip' command.
 
   --cpu-size=CPU_L|CPU_XL|CPU_2XL|CPU_4XL  CPU size for the deployment.
 
-    The CPU allocation size for your deployed package. Options are: CPU_L (small), CPU_XL (large), CPU_2XL (extra
-    large, default), CPU_4XL (maximum). Higher CPU sizes provide more processing power but may have quota implications.
+    The CPU allocation size for your deployed package. Options are: CPU_L (small), CPU_XL (large), CPU_2XL (extra large,
+    default), CPU_4XL (maximum). Higher CPU sizes provide more processing power but may have quota implications.
 
-  --function-invoke-opt=<value>  Function invocation option (function packages only).
+  --function-invoke-opt=UnstructuredChunking  Function invocation option (function packages only).
 
-    Configuration for how functions should be invoked. UnstructuredChunking is only valid option at this point.
+    Configuration for how functions should be invoked. UnstructuredChunking is only valid option at this point
 
   --network=<value>  Network configuration for Jupyter notebooks.
 
-    Optional network configuration setting for packages that include Jupyter notebooks. Common values include 'host'
-    for host network mode. Typically applies to packages with Jupyter notebook support.
+    Optional network configuration setting for packages that include Jupyter notebooks. Common values include 'host' for
+    host network mode. Typically applies to packages with Jupyter notebook support.
+
+  --package-version=<value>  Version of the package to deploy.
+
+    The version string for your package deployment. Use semantic versioning (such as 1.0.0) to track different releases
+    of your code.
 ```
+
+_See code: [src/commands/data-code-extension/function/deploy.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.0/src/commands/data-code-extension/function/deploy.ts)_
 
 ## `sf data-code-extension function init`
 
-Initialize the Data Code Extension environment.
+Initialize the Data Code Extension function package.
 
 ```
 USAGE
-  $ sf data-code-extension function init -p <value> [--json] [--flags-dir <value>]
+  $ sf data-code-extension function init -p <value> [--flags-dir <value>]
 
 FLAGS
   -p, --package-dir=<value>  (required) Directory path where the package will be created.
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
-  --json               Format output as json.
 
 DESCRIPTION
-  Initialize the Data Code Extension environment.
+  Initialize the Data Code Extension function package.
 
   Initializes the Data Code Extension by checking system requirements and setting up the necessary environment.
 
 EXAMPLES
-  Initialize a script-based Data Cloud package:
-
-    $ sf data-code-extension script init --package-dir ./my-script-package
-
   Initialize a function-based Data Cloud package:
 
     $ sf data-code-extension function init --package-dir ./my-function-package
@@ -201,49 +192,49 @@ EXAMPLES
 FLAG DESCRIPTIONS
   -p, --package-dir=<value>  Directory path where the package will be created.
 
-    The directory path where the new package will be initialized.
-    The directory will be created if it does not exist.
+    The directory path where the new package will be initialized. The directory will be created if it doesn't exist.
 ```
+
+_See code: [src/commands/data-code-extension/function/init.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.0/src/commands/data-code-extension/function/init.ts)_
 
 ## `sf data-code-extension function run`
 
-Run a Data Code Extension function package locally using data from your Salesforce Org
+Run a Data Code Extension function package locally using data from your Salesforce Org.
 
 ```
 USAGE
-  $ sf data-code-extension function run -e <value> -o <value> [--json] [--flags-dir <value>]
-    [--config-file <value>] [--dependencies <value>]
+  $ sf data-code-extension function run -e <value> -o <value> [--flags-dir <value>] [--config-file <value>]
+  [--dependencies <value>]
 
 FLAGS
-  -e, --entrypoint=<value>   (required) Entrypoint file for the package to run.
-  -o, --target-org=<value>   (required) Target Salesforce org to run against.
-      --config-file=<value>  Path to a config file.
-      --dependencies=<value> Dependencies override for the run.
+  -e, --entrypoint=<value>    (required) Entrypoint file for the package to run.
+  -o, --target-org=<value>    (required) Target Salesforce org to run against.
+      --config-file=<value>   Path to a config file.
+      --dependencies=<value>  Dependencies override for the run.
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
-  --json               Format output as json.
 
 DESCRIPTION
-  Run a Data Code Extension function package locally using data from your Salesforce Org
+  Run a Data Code Extension function package locally using data from your Salesforce Org.
 
   Executes an initialized Data Cloud custom code package against a Salesforce org. The package must be initialized
   before running. Supports both script and function packages with optional config file and dependencies overrides.
 
 EXAMPLES
-  Run a function package against the default org:
+  Run a function package against the org with alias "myorg":
 
     $ sf data-code-extension function run --entrypoint ./my-package --target-org myorg
 
   Run with a custom config file:
 
-    $ sf data-code-extension function run --entrypoint ./my-package --target-org myorg \
-      --config-file ./payload/config.json
+    $ sf data-code-extension function run --entrypoint ./my-package --target-org myorg --config-file \
+      ./payload/config.json
 
   Run with dependencies:
 
-    $ sf data-code-extension function run --entrypoint ./my-package --target-org myorg \
-      --dependencies "pandas==2.0.0"
+    $ sf data-code-extension function run --entrypoint ./my-package --target-org myorg --dependencies \
+      "pandas==2.0.0"
 
 FLAG DESCRIPTIONS
   -e, --entrypoint=<value>  Entrypoint file for the package to run.
@@ -252,8 +243,8 @@ FLAG DESCRIPTIONS
 
   -o, --target-org=<value>  Target Salesforce org to run against.
 
-    The alias of the Salesforce org where you want to run the Data Cloud custom code package. The org must have Data
-    Cloud enabled and appropriate permissions.
+    The alias or username of the Salesforce org where you want to run the Data Cloud custom code package. The org must
+    have Data Cloud enabled and appropriate permissions.
 
   --config-file=<value>  Path to a config file.
 
@@ -262,18 +253,19 @@ FLAG DESCRIPTIONS
 
   --dependencies=<value>  Dependencies override for the run.
 
-    Optional comma-separated list of Python package dependencies to use during the run, overriding those defined in
-    the package's requirements.txt.
+    Optional comma-separated list of Python package dependencies to use during the run, overriding those defined in the
+    package's requirements.txt.
 ```
+
+_See code: [src/commands/data-code-extension/function/run.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.0/src/commands/data-code-extension/function/run.ts)_
 
 ## `sf data-code-extension function scan`
 
-Scan the Data Code Extension function package for permissions and dependencies
+Scan the Data Code Extension function package for permissions and dependencies.
 
 ```
 USAGE
-  $ sf data-code-extension function scan [--json] [--flags-dir <value>] [-e <value>] [--config-file <value>]
-    [-d] [-n]
+  $ sf data-code-extension function scan [--flags-dir <value>] [-e <value>] [--config-file <value>] [-d] [-n]
 
 FLAGS
   -d, --dry-run              Preview changes without modifying any files.
@@ -283,10 +275,9 @@ FLAGS
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
-  --json               Format output as json.
 
 DESCRIPTION
-  Scan the Data Code Extension function package for permissions and dependencies
+  Scan the Data Code Extension function package for permissions and dependencies.
 
   Scans Python files in an initialized Data Code Extension package directory to identify required permissions and
   dependencies. Updates the config.json and requirements.txt files based on the code analysis.
@@ -308,7 +299,7 @@ EXAMPLES
 
     $ sf data-code-extension function scan --dry-run
 
-  Scan without updating requirements.txt:
+  Scan without updating the requirements.txt file:
 
     $ sf data-code-extension function scan --no-requirements
 
@@ -325,22 +316,24 @@ FLAG DESCRIPTIONS
 
   -n, --no-requirements  Skip updating the requirements.txt file.
 
-    When set, only scans for permissions and updates config.json, but does not update the requirements.txt file with
+    When set, only scans for permissions and updates config.json, but doesn't update the requirements.txt file with
     discovered dependencies.
 
   --config-file=<value>  Path to an alternate config file.
 
-    Optional path to an alternate JSON config file to use instead of the package's default config. The file must
-    exist. Useful for testing different configurations without modifying the package's primary config.json.
+    Optional path to an alternate JSON config file to use instead of the package's default config. The file must exist.
+    Useful for testing different configurations without modifying the package's primary config.json.
 ```
+
+_See code: [src/commands/data-code-extension/function/scan.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.0/src/commands/data-code-extension/function/scan.ts)_
 
 ## `sf data-code-extension function zip`
 
-Create a compressed archive of the Data Code Extension function package
+Create a compressed archive of the Data Code Extension function package.
 
 ```
 USAGE
-  $ sf data-code-extension function zip -p <value> [--json] [--flags-dir <value>] [-n <value>]
+  $ sf data-code-extension function zip -p <value> [--flags-dir <value>] [-n <value>]
 
 FLAGS
   -n, --network=<value>      Network configuration, typically used for Jupyter notebook packages.
@@ -348,13 +341,12 @@ FLAGS
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
-  --json               Format output as json.
 
 DESCRIPTION
-  Create a compressed archive of the Data Code Extension function package
+  Create a compressed archive of the Data Code Extension function package.
 
-  Creates a ZIP archive of an initialized Data Code Extension package for deployment. The archive includes all
-  necessary files from the package directory while respecting .gitignore patterns and package requirements.
+  Creates a ZIP archive of an initialized Data Code Extension package for deployment. The archive includes all necessary
+  files from the package directory while respecting .gitignore patterns and package requirements.
 
 EXAMPLES
   Create an archive of a function package:
@@ -368,8 +360,8 @@ EXAMPLES
 FLAG DESCRIPTIONS
   -n, --network=<value>  Network configuration, typically used for Jupyter notebook packages.
 
-    Optional network configuration for packages that use Jupyter notebooks. Common values include 'host', 'bridge', or
-    a custom network name. This flag is typically used when the package needs specific network access configurations.
+    Optional network configuration for packages that use Jupyter notebooks. Common values include 'host', 'bridge', or a
+    custom network name. This flag is typically used when the package needs specific network access configurations.
 
   -p, --package-dir=<value>  Directory containing the initialized package to archive.
 
@@ -377,51 +369,52 @@ FLAG DESCRIPTIONS
     contain a valid package structure with config.json.
 ```
 
+_See code: [src/commands/data-code-extension/function/zip.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.0/src/commands/data-code-extension/function/zip.ts)_
+
 ## `sf data-code-extension script deploy`
 
-Deploy a Data Code Extension script package to a Salesforce org
+Deploy a Data Code Extension script package to a Salesforce org.
 
 ```
 USAGE
-  $ sf data-code-extension script deploy -n <value> -v <value> -d <value> -p <value> -o <value>
-    [--json] [--flags-dir <value>] [--cpu-size CPU_L|CPU_XL|CPU_2XL|CPU_4XL] [--network <value>]
+  $ sf data-code-extension script deploy -n <value> --package-version <value> -d <value> -p <value> -o <value> [--flags-dir <value>]
+    [--network <value>] [--cpu-size CPU_L|CPU_XL|CPU_2XL|CPU_4XL]
 
 FLAGS
-  -d, --description=<value>  (required) Description of the package.
-  -n, --name=<value>         (required) Name of the package to deploy.
-  -o, --target-org=<value>   (required) Target Salesforce org for deployment.
-  -p, --package-dir=<value>  (required) Directory containing the packaged code.
-  -v, --version=<value>      (required) Version of the package to deploy.
-      --cpu-size=<option>    [default: CPU_2XL] CPU size for the deployment.
-                             <options: CPU_L|CPU_XL|CPU_2XL|CPU_4XL>
-      --network=<value>      Network configuration for Jupyter notebooks.
+  -d, --description=<value>      (required) Description of the package.
+  -n, --name=<value>             (required) Name of the package to deploy.
+  -o, --target-org=<value>       (required) Target Salesforce org for deployment.
+  -p, --package-dir=<value>      (required) Directory containing the packaged code.
+      --cpu-size=<option>        [default: CPU_2XL] CPU size for the deployment.
+                                 <options: CPU_L|CPU_XL|CPU_2XL|CPU_4XL>
+      --network=<value>          Network configuration for Jupyter notebooks.
+      --package-version=<value>  (required) Version of the package to deploy.
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
-  --json               Format output as json.
 
 DESCRIPTION
-  Deploy a Data Code Extension script package to a Salesforce org
+  Deploy a Data Code Extension script package to a Salesforce org.
 
-  Deploys an initialized and packaged Data Cloud custom code to a Salesforce org. The package must be initialized and
+  Deploys an initialized and packaged Data Cloud code extension to a Salesforce org. The package must be initialized and
   zipped before deployment. Supports both script and function packages with configurable CPU resources and network
   settings.
 
 EXAMPLES
-  Deploy a script package to the default org:
+  Deploy a script package to the org with alias "myorg":
 
-    $ sf data-code-extension script deploy --name "my-package" --version "1.0.0" --description "My package" \
+    $ sf data-code-extension script deploy --name my-package --package-version 1.0.0 --description "My package" \
       --package-dir ./package --target-org myorg
 
-  Deploy with specific CPU size:
+  Deploy with a specific CPU size:
 
-    $ sf data-code-extension script deploy --name "my-package" --version "1.0.0" --description "My package" \
+    $ sf data-code-extension script deploy --name my-package --package-version 1.0.0 --description "My package" \
       --package-dir ./package --target-org myorg --cpu-size CPU_4XL
 
   Deploy with network configuration for Jupyter notebooks:
 
-    $ sf data-code-extension script deploy --name "my-package" --version "1.0.0" --description "My package" \
-      --package-dir ./package --target-org myorg --network "host"
+    $ sf data-code-extension script deploy --name my-package --package-version 1.0.0 --description "My package" \
+      --package-dir ./package --target-org myorg --network host
 
 FLAG DESCRIPTIONS
   -d, --description=<value>  Description of the package.
@@ -431,52 +424,53 @@ FLAG DESCRIPTIONS
 
   -n, --name=<value>  Name of the package to deploy.
 
-    The unique name identifier for your Data Cloud custom code package. This name will be used to identify the
-    deployment in your Salesforce org.
+    The unique name identifier for your Data Cloud custom code package. This name is used to identify the deployment in
+    your Salesforce org.
 
   -o, --target-org=<value>  Target Salesforce org for deployment.
 
-    The alias of the Salesforce org where you want to deploy the Data Cloud custom code package. The org must have Data
-    Cloud enabled and appropriate permissions.
+    The alias or username of the Salesforce org where you want to deploy the Data Cloud custom code package. The org
+    must have Data Cloud enabled and appropriate permissions.
 
   -p, --package-dir=<value>  Directory containing the packaged code.
 
     The path to the directory containing your initialized and zipped Data Cloud custom code package. This directory
-    should contain the package files created by the 'zip' command.
-
-  -v, --version=<value>  Version of the package to deploy.
-
-    The version string for your package deployment. Use semantic versioning (e.g., 1.0.0) to track different releases
-    of your code.
+    contains the package files created by the 'zip' command.
 
   --cpu-size=CPU_L|CPU_XL|CPU_2XL|CPU_4XL  CPU size for the deployment.
 
-    The CPU allocation size for your deployed package. Options are: CPU_L (small), CPU_XL (large), CPU_2XL (extra
-    large, default), CPU_4XL (maximum). Higher CPU sizes provide more processing power but may have quota implications.
+    The CPU allocation size for your deployed package. Options are: CPU_L (small), CPU_XL (large), CPU_2XL (extra large,
+    default), CPU_4XL (maximum). Higher CPU sizes provide more processing power but may have quota implications.
 
   --network=<value>  Network configuration for Jupyter notebooks.
 
-    Optional network configuration setting for packages that include Jupyter notebooks. Common values include 'host'
-    for host network mode. Typically applies to packages with Jupyter notebook support.
+    Optional network configuration setting for packages that include Jupyter notebooks. Common values include 'host' for
+    host network mode. Typically applies to packages with Jupyter notebook support.
+
+  --package-version=<value>  Version of the package to deploy.
+
+    The version string for your package deployment. Use semantic versioning (such as 1.0.0) to track different releases
+    of your code.
 ```
+
+_See code: [src/commands/data-code-extension/script/deploy.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.0/src/commands/data-code-extension/script/deploy.ts)_
 
 ## `sf data-code-extension script init`
 
-Initialize the Data Code Extension environment.
+Initialize the Data Code Extension script package.
 
 ```
 USAGE
-  $ sf data-code-extension script init -p <value> [--json] [--flags-dir <value>]
+  $ sf data-code-extension script init -p <value> [--flags-dir <value>]
 
 FLAGS
   -p, --package-dir=<value>  (required) Directory path where the package will be created.
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
-  --json               Format output as json.
 
 DESCRIPTION
-  Initialize the Data Code Extension environment.
+  Initialize the Data Code Extension script package.
 
   Initializes the Data Code Extension by checking system requirements and setting up the necessary environment.
 
@@ -485,56 +479,51 @@ EXAMPLES
 
     $ sf data-code-extension script init --package-dir ./my-script-package
 
-  Initialize a function-based Data Cloud package:
-
-    $ sf data-code-extension function init --package-dir ./my-function-package
-
 FLAG DESCRIPTIONS
   -p, --package-dir=<value>  Directory path where the package will be created.
 
-    The directory path where the new package will be initialized.
-    The directory will be created if it does not exist.
+    The directory path where the new package will be initialized. The directory will be created if it doesn't exist.
 ```
+
+_See code: [src/commands/data-code-extension/script/init.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.0/src/commands/data-code-extension/script/init.ts)_
 
 ## `sf data-code-extension script run`
 
-Run a Data Code Extension script package locally using data from your Salesforce Org
+Run a Data Code Extension script package locally using data from your Salesforce Org.
 
 ```
 USAGE
-  $ sf data-code-extension script run -e <value> -o <value> [--json] [--flags-dir <value>]
-    [--config-file <value>] [--dependencies <value>]
+  $ sf data-code-extension script run -e <value> -o <value> [--flags-dir <value>] [--config-file <value>]
+  [--dependencies <value>]
 
 FLAGS
-  -e, --entrypoint=<value>   (required) Entrypoint file for the package to run.
-  -o, --target-org=<value>   (required) Target Salesforce org to run against.
-      --config-file=<value>  Path to a config file.
-      --dependencies=<value> Dependencies override for the run.
+  -e, --entrypoint=<value>    (required) Entrypoint file for the package to run.
+  -o, --target-org=<value>    (required) Target Salesforce org to run against.
+      --config-file=<value>   Path to a config file.
+      --dependencies=<value>  Dependencies override for the run.
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
-  --json               Format output as json.
 
 DESCRIPTION
-  Run a Data Code Extension script package locally using data from your Salesforce Org
+  Run a Data Code Extension script package locally using data from your Salesforce Org.
 
   Executes an initialized Data Cloud custom code package against a Salesforce org. The package must be initialized
   before running. Supports both script and function packages with optional config file and dependencies overrides.
 
 EXAMPLES
-  Run a script package against the default org:
+  Run a script package against the org with alias "myorg":
 
     $ sf data-code-extension script run --entrypoint ./my-package --target-org myorg
 
   Run with a custom config file:
 
-    $ sf data-code-extension script run --entrypoint ./my-package --target-org myorg \
-      --config-file ./payload/config.json
+    $ sf data-code-extension script run --entrypoint ./my-package --target-org myorg --config-file \
+      ./payload/config.json
 
   Run with dependencies:
 
-    $ sf data-code-extension script run --entrypoint ./my-package --target-org myorg \
-      --dependencies "pandas==2.0.0"
+    $ sf data-code-extension script run --entrypoint ./my-package --target-org myorg --dependencies "pandas==2.0.0"
 
 FLAG DESCRIPTIONS
   -e, --entrypoint=<value>  Entrypoint file for the package to run.
@@ -543,8 +532,8 @@ FLAG DESCRIPTIONS
 
   -o, --target-org=<value>  Target Salesforce org to run against.
 
-    The alias of the Salesforce org where you want to run the Data Cloud custom code package. The org must have Data
-    Cloud enabled and appropriate permissions.
+    The alias or username of the Salesforce org where you want to run the Data Cloud custom code package. The org must
+    have Data Cloud enabled and appropriate permissions.
 
   --config-file=<value>  Path to a config file.
 
@@ -553,18 +542,19 @@ FLAG DESCRIPTIONS
 
   --dependencies=<value>  Dependencies override for the run.
 
-    Optional comma-separated list of Python package dependencies to use during the run, overriding those defined in
-    the package's requirements.txt.
+    Optional comma-separated list of Python package dependencies to use during the run, overriding those defined in the
+    package's requirements.txt.
 ```
+
+_See code: [src/commands/data-code-extension/script/run.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.0/src/commands/data-code-extension/script/run.ts)_
 
 ## `sf data-code-extension script scan`
 
-Scan the Data Code Extension script package for permissions and dependencies
+Scan the Data Code Extension script package for permissions and dependencies.
 
 ```
 USAGE
-  $ sf data-code-extension script scan [--json] [--flags-dir <value>] [-e <value>] [--config-file <value>]
-    [-d] [-n]
+  $ sf data-code-extension script scan [--flags-dir <value>] [-e <value>] [--config-file <value>] [-d] [-n]
 
 FLAGS
   -d, --dry-run              Preview changes without modifying any files.
@@ -574,10 +564,9 @@ FLAGS
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
-  --json               Format output as json.
 
 DESCRIPTION
-  Scan the Data Code Extension script package for permissions and dependencies
+  Scan the Data Code Extension script package for permissions and dependencies.
 
   Scans Python files in an initialized Data Code Extension package directory to identify required permissions and
   dependencies. Updates the config.json and requirements.txt files based on the code analysis.
@@ -599,7 +588,7 @@ EXAMPLES
 
     $ sf data-code-extension script scan --dry-run
 
-  Scan without updating requirements.txt:
+  Scan without updating the requirements.txt file:
 
     $ sf data-code-extension script scan --no-requirements
 
@@ -616,22 +605,24 @@ FLAG DESCRIPTIONS
 
   -n, --no-requirements  Skip updating the requirements.txt file.
 
-    When set, only scans for permissions and updates config.json, but does not update the requirements.txt file with
+    When set, only scans for permissions and updates config.json, but doesn't update the requirements.txt file with
     discovered dependencies.
 
   --config-file=<value>  Path to an alternate config file.
 
-    Optional path to an alternate JSON config file to use instead of the package's default config. The file must
-    exist. Useful for testing different configurations without modifying the package's primary config.json.
+    Optional path to an alternate JSON config file to use instead of the package's default config. The file must exist.
+    Useful for testing different configurations without modifying the package's primary config.json.
 ```
+
+_See code: [src/commands/data-code-extension/script/scan.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.0/src/commands/data-code-extension/script/scan.ts)_
 
 ## `sf data-code-extension script zip`
 
-Create a compressed archive of the Data Code Extension script package
+Create a compressed archive of the Data Code Extension script package.
 
 ```
 USAGE
-  $ sf data-code-extension script zip -p <value> [--json] [--flags-dir <value>] [-n <value>]
+  $ sf data-code-extension script zip -p <value> [--flags-dir <value>] [-n <value>]
 
 FLAGS
   -n, --network=<value>      Network configuration, typically used for Jupyter notebook packages.
@@ -639,13 +630,12 @@ FLAGS
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
-  --json               Format output as json.
 
 DESCRIPTION
-  Create a compressed archive of the Data Code Extension script package
+  Create a compressed archive of the Data Code Extension script package.
 
-  Creates a ZIP archive of an initialized Data Code Extension package for deployment. The archive includes all
-  necessary files from the package directory while respecting .gitignore patterns and package requirements.
+  Creates a ZIP archive of an initialized Data Code Extension package for deployment. The archive includes all necessary
+  files from the package directory while respecting .gitignore patterns and package requirements.
 
 EXAMPLES
   Create an archive of a script package:
@@ -659,13 +649,15 @@ EXAMPLES
 FLAG DESCRIPTIONS
   -n, --network=<value>  Network configuration, typically used for Jupyter notebook packages.
 
-    Optional network configuration for packages that use Jupyter notebooks. Common values include 'host', 'bridge', or
-    a custom network name. This flag is typically used when the package needs specific network access configurations.
+    Optional network configuration for packages that use Jupyter notebooks. Common values include 'host', 'bridge', or a
+    custom network name. This flag is typically used when the package needs specific network access configurations.
 
   -p, --package-dir=<value>  Directory containing the initialized package to archive.
 
     The path to the directory containing an initialized Data Code Extension package. The directory must exist and
     contain a valid package structure with config.json.
 ```
+
+_See code: [src/commands/data-code-extension/script/zip.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.0/src/commands/data-code-extension/script/zip.ts)_
 
 <!-- commandsstop -->
