@@ -27,5 +27,7 @@ jobs:
     with:
       tag: ${{ needs.getDistTag.outputs.tag || 'latest' }}
       githubTag: ${{ github.event.release.tag_name || inputs.tag }}
+      ctc: true
+      sign: true
 
     secrets: inherit
