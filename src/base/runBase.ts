@@ -2,7 +2,7 @@ import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages, Org } from '@salesforce/core';
 import { DatacodeBinaryExecutor, type DatacodeRunExecutionResult } from '../utils/datacodeBinaryExecutor.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
-import { sharedBaseFlags, type SharedResultProps } from './types.js';
+import { type SharedResultProps } from './types.js';
 
 export type BaseRunFlags = {
   entrypoint: string;
@@ -20,8 +20,7 @@ export type RunResult = SharedResultProps & {
 
 // eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
 export abstract class RunBase extends SfCommand<RunResult> {
-  // Override baseFlags to hide global flags
-  public static readonly baseFlags = sharedBaseFlags;
+  public static enableJsonFlag = false;
 
   public async run(): Promise<RunResult> {
     const { flags } = (await this.parse(this.constructor as typeof RunBase)) as unknown as { flags: BaseRunFlags };

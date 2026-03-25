@@ -8,10 +8,7 @@ const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension',
 export default class Run extends RunBase {
   public static readonly summary = messages.getMessage('summary', ['function']);
   public static readonly description = messages.getMessage('description');
-  public static readonly examples = messages
-    // eslint-disable-next-line sf-plugin/no-missing-messages
-    .getMessages('examples')
-    .map((example) => example.replace(/%s/g, 'function'));
+  public static readonly examples = messages.getMessages('examples', ['function', 'function', 'function', 'function']);
 
   public static readonly flags = {
     entrypoint: Flags.file({
