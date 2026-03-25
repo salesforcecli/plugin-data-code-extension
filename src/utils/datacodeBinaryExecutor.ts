@@ -13,15 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { exec, spawn, type ExecException } from 'node:child_process';
-import { promisify } from 'node:util';
+import { spawn } from 'node:child_process';
 import { SfError } from '@salesforce/core';
 import { Messages } from '@salesforce/core';
 import { type PythonVersionInfo } from './pythonChecker.js';
 import { type PipPackageInfo } from './pipChecker.js';
 import { type DatacodeBinaryInfo } from './datacodeBinaryChecker.js';
-
-const execAsync = promisify(exec);
+import { spawnAsync, type SpawnError } from './spawnHelper.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'datacodeBinaryExecutor');
@@ -89,11 +87,9 @@ export class DatacodeBinaryExecutor {
     codeType: 'script' | 'function',
     packageDir: string
   ): Promise<DatacodeInitExecutionResult> {
-    const command = `datacustomcode init --code-type ${codeType} ${packageDir}`;
-
     try {
-      const { stdout, stderr } = await execAsync(command, {
-        timeout: 30_000, // 30 second timeout
+      const { stdout, stderr } = await spawnAsync('datacustomcode', ['init', '--code-type', codeType, packageDir], {
+        timeout: 30_000,
       });
 
       // Parse created files from output if available
@@ -111,8 +107,8 @@ export class DatacodeBinaryExecutor {
         projectPath: packageDir,
       };
     } catch (error) {
-      const execError = error as ExecException & { stderr?: string };
-      const binaryOutput = execError.stderr?.trim() ?? (error instanceof Error ? error.message : String(error));
+      const spawnError = error as SpawnError;
+      const binaryOutput = spawnError.stderr?.trim() ?? (error instanceof Error ? error.message : String(error));
       throw new SfError(
         messages.getMessage('error.initExecutionFailed', [packageDir, binaryOutput]),
         'InitExecutionFailed',
@@ -138,30 +134,26 @@ export class DatacodeBinaryExecutor {
     noRequirements: boolean = false,
     configFile?: string
   ): Promise<DatacodeScanExecutionResult> {
-    // Build the command with optional flags
-    let command = 'datacustomcode scan';
+    const args = ['scan'];
 
-    // Add boolean flags FIRST (before positional argument)
     if (dryRun) {
-      command += ' --dry-run';
+      args.push('--dry-run');
     }
 
     if (noRequirements) {
-      command += ' --no-requirements';
+      args.push('--no-requirements');
     }
 
     if (configFile) {
-      command += ` --config "${configFile}"`;
+      args.push('--config', configFile);
     }
 
-    // Add entrypoint as positional argument LAST (with proper quoting for paths with spaces)
-    const configPath = config ?? 'payload/config.json';
-    command += ` "${configPath}"`;
+    args.push(config ?? 'payload/config.json');
 
     try {
-      const { stdout, stderr } = await execAsync(command, {
+      const { stdout, stderr } = await spawnAsync('datacustomcode', args, {
         cwd: workingDir,
-        timeout: 60_000, // 60 second timeout (longer than init's 30 seconds)
+        timeout: 60_000,
       });
 
       // Parse scan results from output
@@ -197,8 +189,8 @@ export class DatacodeBinaryExecutor {
         filesScanned: filesScanned.length > 0 ? filesScanned : undefined,
       };
     } catch (error) {
-      const execError = error as ExecException & { stderr?: string };
-      const binaryOutput = execError.stderr?.trim() ?? (error instanceof Error ? error.message : String(error));
+      const spawnError = error as SpawnError;
+      const binaryOutput = spawnError.stderr?.trim() ?? (error instanceof Error ? error.message : String(error));
       throw new SfError(
         messages.getMessage('error.scanExecutionFailed', [workingDir, binaryOutput]),
         'ScanExecutionFailed',
@@ -216,20 +208,17 @@ export class DatacodeBinaryExecutor {
    * @throws SfError if execution fails
    */
   public static async executeBinaryZip(packageDir: string, network?: string): Promise<DatacodeZipExecutionResult> {
-    // Build the command with optional network flag
-    let command = 'datacustomcode zip';
+    const args = ['zip'];
 
-    // Add network flag if provided (before positional argument)
     if (network) {
-      command += ` --network "${network}"`;
+      args.push('--network', network);
     }
 
-    // Add package directory as positional argument (with proper quoting for paths with spaces)
-    command += ` "${packageDir}"`;
+    args.push(packageDir);
 
     try {
-      const { stdout, stderr } = await execAsync(command, {
-        timeout: 120_000, // 120 second timeout (zipping can take time for large packages)
+      const { stdout, stderr } = await spawnAsync('datacustomcode', args, {
+        timeout: 120_000,
       });
 
       // Parse archive path from output
@@ -264,8 +253,8 @@ export class DatacodeBinaryExecutor {
         archiveSize,
       };
     } catch (error) {
-      const execError = error as ExecException & { stderr?: string };
-      const binaryOutput = execError.stderr?.trim() ?? (error instanceof Error ? error.message : String(error));
+      const spawnError = error as SpawnError;
+      const binaryOutput = spawnError.stderr?.trim() ?? (error instanceof Error ? error.message : String(error));
       throw new SfError(
         messages.getMessage('error.zipExecutionFailed', [packageDir, binaryOutput]),
         'ZipExecutionFailed',
@@ -432,23 +421,21 @@ export class DatacodeBinaryExecutor {
     configFile?: string,
     dependencies?: string
   ): Promise<DatacodeRunExecutionResult> {
-    // Build the command — flags before the positional argument
-    let command = 'datacustomcode run';
-    command += ` --sf-cli-org "${targetOrg}"`;
+    const args = ['run', '--sf-cli-org', targetOrg];
 
     if (configFile) {
-      command += ` --config-file "${configFile}"`;
+      args.push('--config-file', configFile);
     }
 
     if (dependencies) {
-      command += ` --dependencies "${dependencies}"`;
+      args.push('--dependencies', dependencies);
     }
 
-    command += ` "${packageDir}"`;
+    args.push(packageDir);
 
     try {
-      const { stdout, stderr } = await execAsync(command, {
-        timeout: 300_000, // 5 minute timeout
+      const { stdout, stderr } = await spawnAsync('datacustomcode', args, {
+        timeout: 300_000,
       });
 
       // Parse status from output
@@ -474,8 +461,8 @@ export class DatacodeBinaryExecutor {
         output,
       };
     } catch (error) {
-      const execError = error as ExecException & { stderr?: string };
-      const errorMessage = execError.message ?? String(error);
+      const spawnError = error as SpawnError;
+      const errorMessage = spawnError.message ?? String(error);
 
       if (errorMessage.includes('Authentication failed') || errorMessage.includes('Invalid credentials')) {
         throw new SfError(
@@ -488,7 +475,7 @@ export class DatacodeBinaryExecutor {
       // Surface the binary's stderr directly so any runtime error is shown as-is.
       // File-existence checks for entrypoint and config-file are already handled by
       // the CLI flag layer (exists: true), so those patterns are not matched here.
-      const binaryOutput = execError.stderr?.trim() ?? errorMessage;
+      const binaryOutput = spawnError.stderr?.trim() ?? errorMessage;
       throw new SfError(
         messages.getMessage('error.runExecutionFailed', [binaryOutput]),
         'RunExecutionFailed',

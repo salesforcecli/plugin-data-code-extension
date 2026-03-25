@@ -13,12 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
 import { SfError } from '@salesforce/core';
 import { Messages } from '@salesforce/core';
-
-const execAsync = promisify(exec);
+import { spawnAsync } from './spawnHelper.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'pythonChecker');
@@ -89,7 +86,7 @@ export class PythonChecker {
    */
   private static async getPythonVersion(command: string): Promise<PythonVersionInfo> {
     try {
-      const { stdout } = await execAsync(`${command} --version`);
+      const { stdout } = await spawnAsync(command, ['--version']);
       const versionMatch = stdout.match(/Python (\d+)\.(\d+)\.(\d+)/);
 
       if (!versionMatch) {
