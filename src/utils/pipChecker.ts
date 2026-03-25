@@ -13,12 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
 import { SfError } from '@salesforce/core';
 import { Messages } from '@salesforce/core';
-
-const execAsync = promisify(exec);
+import { spawnAsync } from './spawnHelper.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'pipChecker');
@@ -30,7 +27,16 @@ export type PipPackageInfo = {
   pipCommand: string;
 };
 
+type PipCommand = { cmd: string; args: string[] };
+
 export class PipChecker {
+  private static readonly PIP_COMMANDS: PipCommand[] = [
+    { cmd: 'pip3', args: [] },
+    { cmd: 'pip', args: [] },
+    { cmd: 'python3', args: ['-m', 'pip'] },
+    { cmd: 'python', args: ['-m', 'pip'] },
+  ];
+
   /**
    * Checks if a specific pip package is installed on the system.
    *
@@ -39,28 +45,22 @@ export class PipChecker {
    * @throws SfError if pip is not found or package is not installed
    */
   public static async checkPackage(packageName: string): Promise<PipPackageInfo> {
-    // Try different pip commands in order of preference
-    const pipCommands = ['pip3', 'pip', 'python3 -m pip', 'python -m pip'];
-
-    for (const command of pipCommands) {
+    for (const pipCommand of this.PIP_COMMANDS) {
       try {
         // eslint-disable-next-line no-await-in-loop
-        const packageInfo = await this.getPackageInfo(command, packageName);
+        const packageInfo = await this.getPackageInfo(pipCommand, packageName);
 
         if (packageInfo) {
           return packageInfo;
         }
-      } catch (error) {
-        // Continue to try the next command
+      } catch {
         continue;
       }
     }
 
-    // Check if pip is available at all
-    const pipAvailable = await this.isPipAvailable(pipCommands);
+    const pipAvailable = await this.isPipAvailable(this.PIP_COMMANDS);
 
     if (!pipAvailable) {
-      // Pip not found with any command
       throw new SfError(
         messages.getMessage('error.pipNotFound'),
         'PipNotFound',
@@ -68,7 +68,6 @@ export class PipChecker {
       );
     }
 
-    // Pip is available but package is not installed
     throw new SfError(
       messages.getMessage('error.packageNotInstalled', [packageName]),
       'PackageNotInstalled',
@@ -79,15 +78,14 @@ export class PipChecker {
   /**
    * Gets the package information for a specific pip command and package name.
    *
-   * @param pipCommand The pip command to use
+   * @param pipCommand The pip command descriptor to use
    * @param packageName The name of the package to check
    * @returns PipPackageInfo if package is found, null otherwise
    */
-  private static async getPackageInfo(pipCommand: string, packageName: string): Promise<PipPackageInfo | null> {
+  private static async getPackageInfo(pipCommand: PipCommand, packageName: string): Promise<PipPackageInfo | null> {
     try {
-      const { stdout } = await execAsync(`${pipCommand} show ${packageName}`);
+      const { stdout } = await spawnAsync(pipCommand.cmd, [...pipCommand.args, 'show', packageName]);
 
-      // Parse the output to extract package information
       const nameMatch = stdout.match(/Name:\s+(.+)/);
       const versionMatch = stdout.match(/Version:\s+(.+)/);
       const locationMatch = stdout.match(/Location:\s+(.+)/);
@@ -97,13 +95,12 @@ export class PipChecker {
           name: nameMatch[1].trim(),
           version: versionMatch[1].trim(),
           location: locationMatch[1].trim(),
-          pipCommand: pipCommand.split(' ')[0], // Extract the base command (pip3, pip, python3, python)
+          pipCommand: pipCommand.cmd,
         };
       }
 
       return null;
-    } catch (error) {
-      // Package not found or pip command failed
+    } catch {
       return null;
     }
   }
@@ -111,16 +108,16 @@ export class PipChecker {
   /**
    * Checks if pip is available with any of the given commands.
    *
-   * @param pipCommands List of pip commands to try
+   * @param pipCommands List of pip command descriptors to try
    * @returns true if pip is available, false otherwise
    */
-  private static async isPipAvailable(pipCommands: string[]): Promise<boolean> {
-    for (const command of pipCommands) {
+  private static async isPipAvailable(pipCommands: PipCommand[]): Promise<boolean> {
+    for (const { cmd, args } of pipCommands) {
       try {
         // eslint-disable-next-line no-await-in-loop
-        await execAsync(`${command} --version`);
+        await spawnAsync(cmd, [...args, '--version']);
         return true;
-      } catch (error) {
+      } catch {
         continue;
       }
     }

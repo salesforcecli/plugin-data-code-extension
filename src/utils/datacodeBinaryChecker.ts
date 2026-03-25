@@ -13,12 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
 import { SfError } from '@salesforce/core';
 import { Messages } from '@salesforce/core';
-
-const execAsync = promisify(exec);
+import { spawnAsync } from './spawnHelper.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'datacodeBinaryChecker');
@@ -74,9 +71,8 @@ export class DatacodeBinaryChecker {
    */
   private static async isCommandAvailable(command: string): Promise<boolean> {
     try {
-      // Use 'which' on Unix-like systems, 'where' on Windows
       const checkCommand = process.platform === 'win32' ? 'where' : 'which';
-      await execAsync(`${checkCommand} ${command}`);
+      await spawnAsync(checkCommand, [command]);
       return true;
     } catch {
       return false;
@@ -91,25 +87,19 @@ export class DatacodeBinaryChecker {
    */
   private static async getBinaryVersion(command: string): Promise<DatacodeBinaryInfo | null> {
     try {
-      const { stdout } = await execAsync(`${command} version`);
+      const { stdout } = await spawnAsync(command, ['version']);
 
-      // Parse the version output
-      // Expected format might be something like "datacustomcode version 1.2.3" or just "1.2.3"
-      // We'll handle multiple possible formats
       const versionMatch = stdout.match(/(\d+\.\d+(?:\.\d+)?(?:[-\w.]*)?)/);
 
       if (versionMatch) {
         const version = versionMatch[1];
 
-        // Try to get the binary path (optional)
         let path: string | undefined;
         try {
-          // On Unix-like systems use 'which', on Windows use 'where'
           const pathCommand = process.platform === 'win32' ? 'where' : 'which';
-          const { stdout: pathOutput } = await execAsync(`${pathCommand} ${command}`);
-          path = pathOutput.trim().split('\n')[0]; // Get first path if multiple
+          const { stdout: pathOutput } = await spawnAsync(pathCommand, [command]);
+          path = pathOutput.trim().split('\n')[0];
         } catch {
-          // Path lookup is optional, don't fail if it doesn't work
           path = undefined;
         }
 
@@ -120,14 +110,12 @@ export class DatacodeBinaryChecker {
         };
       }
 
-      // If we can't parse the version but the command executed, still return basic info
       return {
         command,
         version: 'unknown',
         path: undefined,
       };
-    } catch (error) {
-      // Command not found or failed to execute
+    } catch {
       return null;
     }
   }
