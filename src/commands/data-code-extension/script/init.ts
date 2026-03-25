@@ -22,6 +22,7 @@ const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension',
 
 // eslint-disable-next-line sf-plugin/only-extend-SfCommand
 export default class Init extends InitBase {
+  public static readonly state = 'beta';
   public static readonly summary = messages.getMessage('summary', ['script']);
   public static readonly description = messages.getMessage('description');
   public static readonly examples = messages.getMessages('examples', ['script', 'script', 'script']);

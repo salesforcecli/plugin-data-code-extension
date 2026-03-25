@@ -26,6 +26,7 @@ export type FunctionDeployFlags = BaseDeployFlags & {
 
 // eslint-disable-next-line sf-plugin/only-extend-SfCommand
 export default class Deploy extends DeployBase<FunctionDeployFlags> {
+  public static readonly state = 'beta';
   public static readonly summary = messages.getMessage('summary', ['function']);
   public static readonly description = messages.getMessage('description');
   public static readonly examples = messages.getMessages('examples.function');
