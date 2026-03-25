@@ -23,8 +23,14 @@ const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension',
 export default class Scan extends ScanBase {
   public static readonly summary = messages.getMessage('summary', ['script']);
   public static readonly description = messages.getMessage('description');
-  // eslint-disable-next-line sf-plugin/no-missing-messages
-  public static readonly examples = messages.getMessages('examples').map((example) => example.replace(/%s/g, 'script'));
+  public static readonly examples = messages.getMessages('examples', [
+    'script',
+    'script',
+    'script',
+    'script',
+    'script',
+    'script',
+  ]);
 
   public static readonly flags = {
     entrypoint: Flags.string({

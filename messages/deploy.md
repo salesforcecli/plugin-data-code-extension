@@ -12,13 +12,37 @@ Deploys an initialized and packaged Data Cloud code extension to a Salesforce or
 
   <%= config.bin %> data-code-extension %s deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./package --target-org myorg
 
-- Deploy with specific a CPU size:
+- Deploy with a specific CPU size:
 
   <%= config.bin %> data-code-extension %s deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./package --target-org myorg --cpu-size CPU_4XL
 
 - Deploy with network configuration for Jupyter notebooks:
 
   <%= config.bin %> data-code-extension %s deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./package --target-org myorg --network host
+
+# examples.script
+
+- Deploy a script package to the org with alias "myorg":
+
+  <%= config.bin %> data-code-extension script deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./package --target-org myorg
+
+- Deploy with a specific CPU size:
+
+  <%= config.bin %> data-code-extension script deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./package --target-org myorg --cpu-size CPU_4XL
+
+- Deploy with network configuration for Jupyter notebooks:
+
+  <%= config.bin %> data-code-extension script deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./package --target-org myorg --network host
+
+# examples.function
+
+- Deploy a function package to the org with alias "myorg":
+
+  <%= config.bin %> data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./package --target-org myorg --function-invoke-opt UnstructuredChunking
+
+- Deploy with a specific CPU size:
+
+  <%= config.bin %> data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./package --target-org myorg --cpu-size CPU_4XL --function-invoke-opt UnstructuredChunking
 
 # info.checkingPython
 
@@ -88,11 +112,11 @@ Name of the package to deploy.
 
 The unique name identifier for your Data Cloud custom code package. This name is used to identify the deployment in your Salesforce org.
 
-# flags.version.summary
+# flags.packageVersion.summary
 
 Version of the package to deploy.
 
-# flags.version.description
+# flags.packageVersion.description
 
 The version string for your package deployment. Use semantic versioning (such as 1.0.0) to track different releases of your code.
 

@@ -375,7 +375,7 @@ describe('data-code-extension scan commands', () => {
         filesScanned: ['main.py'],
       });
 
-      const result = await ScriptScan.run(['--json']);
+      const result = await ScriptScan.run([]);
 
       expect(result).to.be.an('object');
       expect(result.success).to.be.true;

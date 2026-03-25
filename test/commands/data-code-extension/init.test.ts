@@ -100,9 +100,9 @@ describe('data-code-extension init commands', () => {
     }
   });
 
-  it('returns JSON result when --json flag is used for script init', async () => {
+  it('returns structured result for script init', async () => {
     try {
-      const result = await ScriptInit.run(['--json', '--package-dir', './test-json']);
+      const result = await ScriptInit.run(['--package-dir', './test-json']);
 
       // Should return a structured result
       expect(result).to.be.an('object');
@@ -111,7 +111,6 @@ describe('data-code-extension init commands', () => {
       expect(result).to.have.property('message');
       // packageInfo may or may not be present depending on whether package is installed
     } catch (error) {
-      // Even errors should be structured when using --json
       expect(error).to.have.property('name');
       if (error instanceof Error) {
         expect(error.name).to.be.a('string');

@@ -106,7 +106,7 @@ describe('data-code-extension deploy', () => {
       await ScriptDeploy.run([
         '--name',
         'test-script',
-        '--version',
+        '--package-version',
         '1.0.0',
         '--description',
         'Test script deployment',
@@ -130,7 +130,7 @@ describe('data-code-extension deploy', () => {
       await ScriptDeploy.run([
         '--name',
         'test-script',
-        '--version',
+        '--package-version',
         '1.0.0',
         '--description',
         'Test script deployment',
@@ -149,7 +149,7 @@ describe('data-code-extension deploy', () => {
       await ScriptDeploy.run([
         '--name',
         'test-script',
-        '--version',
+        '--package-version',
         '1.0.0',
         '--description',
         'Test script deployment',
@@ -172,7 +172,7 @@ describe('data-code-extension deploy', () => {
         await ScriptDeploy.run([
           '--name',
           'test-script',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test script deployment',
@@ -196,7 +196,7 @@ describe('data-code-extension deploy', () => {
         await ScriptDeploy.run([
           '--name',
           'test-script',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test script deployment',
@@ -218,7 +218,7 @@ describe('data-code-extension deploy', () => {
       await FunctionDeploy.run([
         '--name',
         'test-function',
-        '--version',
+        '--package-version',
         '1.0.0',
         '--description',
         'Test function deployment',
@@ -227,7 +227,7 @@ describe('data-code-extension deploy', () => {
         '--target-org',
         'test@example.com',
         '--function-invoke-opt',
-        'sync',
+        'UnstructuredChunking',
       ]);
 
       expect(sfCommandStubs.log.calledWith('Data Code Extension deployment completed successfully!')).to.be.true;
@@ -239,7 +239,7 @@ describe('data-code-extension deploy', () => {
       await FunctionDeploy.run([
         '--name',
         'test-function',
-        '--version',
+        '--package-version',
         '1.0.0',
         '--description',
         'Test function deployment',
@@ -248,10 +248,10 @@ describe('data-code-extension deploy', () => {
         '--target-org',
         'test@example.com',
         '--function-invoke-opt',
-        'sync',
+        'UnstructuredChunking',
       ]);
 
-      expect(binaryDeployStub.firstCall.args[7]).to.equal('sync');
+      expect(binaryDeployStub.firstCall.args[7]).to.equal('UnstructuredChunking');
     });
 
     it('should validate CPU size options', async () => {
@@ -259,7 +259,7 @@ describe('data-code-extension deploy', () => {
         await FunctionDeploy.run([
           '--name',
           'test-function',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test function deployment',
@@ -284,7 +284,7 @@ describe('data-code-extension deploy', () => {
         await FunctionDeploy.run([
           '--name',
           'test-function',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test function deployment',
@@ -293,7 +293,7 @@ describe('data-code-extension deploy', () => {
           '--target-org',
           'test@example.com',
           '--function-invoke-opt',
-          'sync',
+          'UnstructuredChunking',
         ]);
         expect.fail('Should have thrown an error');
       } catch (error) {
@@ -309,7 +309,7 @@ describe('data-code-extension deploy', () => {
         await FunctionDeploy.run([
           '--name',
           'test-function',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test function deployment',
@@ -318,7 +318,7 @@ describe('data-code-extension deploy', () => {
           '--target-org',
           'test@example.com',
           '--function-invoke-opt',
-          'sync',
+          'UnstructuredChunking',
         ]);
         expect.fail('Should have thrown an error');
       } catch (error) {
@@ -333,7 +333,7 @@ describe('data-code-extension deploy', () => {
       await ScriptDeploy.run([
         '--name',
         'test-script',
-        '--version',
+        '--package-version',
         '1.0.0',
         '--description',
         'Test script deployment',
@@ -350,7 +350,7 @@ describe('data-code-extension deploy', () => {
       await ScriptDeploy.run([
         '--name',
         'test-script',
-        '--version',
+        '--package-version',
         '1.0.0',
         '--description',
         'Test script deployment',
@@ -367,7 +367,7 @@ describe('data-code-extension deploy', () => {
       const result = await ScriptDeploy.run([
         '--name',
         'test-script',
-        '--version',
+        '--package-version',
         '1.0.0',
         '--description',
         'Test script deployment',
@@ -375,7 +375,6 @@ describe('data-code-extension deploy', () => {
         testDir,
         '--target-org',
         'test@example.com',
-        '--json',
       ]);
 
       expect(result).to.have.property('success', true);
@@ -394,7 +393,7 @@ describe('data-code-extension deploy', () => {
         await ScriptDeploy.run([
           '--name',
           'test-script',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test script deployment',
@@ -426,7 +425,7 @@ describe('data-code-extension deploy', () => {
         await ScriptDeploy.run([
           '--name',
           'test-script',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test script deployment',
@@ -457,7 +456,7 @@ describe('data-code-extension deploy', () => {
         await ScriptDeploy.run([
           '--name',
           'test-script',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test script deployment',
@@ -488,7 +487,7 @@ describe('data-code-extension deploy', () => {
         await ScriptDeploy.run([
           '--name',
           'test-script',
-          '--version',
+          '--package-version',
           '1.0.0',
           '--description',
           'Test script deployment',

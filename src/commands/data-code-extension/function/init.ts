@@ -24,14 +24,7 @@ const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension',
 export default class Init extends InitBase {
   public static readonly summary = messages.getMessage('summary', ['function']);
   public static readonly description = messages.getMessage('description');
-  public static readonly examples = ((): string[] => {
-    try {
-      // eslint-disable-next-line sf-plugin/no-missing-messages
-      return messages.getMessages('examples').map((example) => example.replace(/%s/g, 'function'));
-    } catch {
-      return [];
-    }
-  })();
+  public static readonly examples = messages.getMessages('examples', ['function', 'function', 'function']);
 
   public static readonly flags = {
     ...InitBase.flags,

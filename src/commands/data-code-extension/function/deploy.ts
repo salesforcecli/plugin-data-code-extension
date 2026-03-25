@@ -28,10 +28,7 @@ export type FunctionDeployFlags = BaseDeployFlags & {
 export default class Deploy extends DeployBase<FunctionDeployFlags> {
   public static readonly summary = messages.getMessage('summary', ['function']);
   public static readonly description = messages.getMessage('description');
-  public static readonly examples = messages
-    // eslint-disable-next-line sf-plugin/no-missing-messages
-    .getMessages('examples')
-    .map((example) => example.replace(/%s/g, 'function'));
+  public static readonly examples = messages.getMessages('examples.function');
 
   public static readonly flags = {
     ...DeployBase.flags,
@@ -39,6 +36,7 @@ export default class Deploy extends DeployBase<FunctionDeployFlags> {
     'function-invoke-opt': Flags.string({
       summary: messages.getMessage('flags.functionInvokeOpt.summary'),
       description: messages.getMessage('flags.functionInvokeOpt.description'),
+      options: ['UnstructuredChunking'],
       required: true,
     }),
   };

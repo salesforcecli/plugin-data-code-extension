@@ -13,25 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { type PythonVersionInfo } from '../utils/pythonChecker.js';
 import { type PipPackageInfo } from '../utils/pipChecker.js';
 import { type DatacodeBinaryInfo } from '../utils/datacodeBinaryChecker.js';
-
-// eslint-disable-next-line sf-plugin/no-hardcoded-messages-flags, sf-plugin/no-json-flag
-export const sharedBaseFlags = {
-  ...SfCommand.baseFlags,
-  'flags-dir': Flags.directory({
-    summary: 'Import flag values from a directory.',
-    helpGroup: 'GLOBAL',
-    hidden: false,
-  }),
-  json: Flags.boolean({
-    summary: 'Format output as json.',
-    helpGroup: 'GLOBAL',
-    hidden: true,
-  }),
-};
 
 export type SharedResultProps = {
   success: boolean;

@@ -122,9 +122,9 @@ describe('data-code-extension zip commands', () => {
     }
   });
 
-  it('returns JSON result when --json flag is used for script zip', async () => {
+  it('returns structured result for script zip', async () => {
     try {
-      const result = await ScriptZip.run(['--json', '--package-dir', './test-json']);
+      const result = await ScriptZip.run(['--package-dir', './test-json']);
 
       // Should return a structured result
       expect(result).to.be.an('object');
@@ -134,7 +134,6 @@ describe('data-code-extension zip commands', () => {
       expect(result).to.have.property('packageDir');
       // archivePath may or may not be present depending on whether zip succeeded
     } catch (error) {
-      // Even errors should be structured when using --json
       expect(error).to.have.property('name');
       if (error instanceof Error) {
         expect(error.name).to.be.a('string');
@@ -213,9 +212,9 @@ describe('data-code-extension zip commands', () => {
     }
   });
 
-  it('returns JSON result when --json flag is used for function zip', async () => {
+  it('returns structured result for function zip', async () => {
     try {
-      const result = await FunctionZip.run(['--json', '--package-dir', './test-function-json']);
+      const result = await FunctionZip.run(['--package-dir', './test-function-json']);
 
       // Should return a structured result
       expect(result).to.be.an('object');
@@ -224,7 +223,6 @@ describe('data-code-extension zip commands', () => {
       expect(result).to.have.property('message');
       expect(result).to.have.property('packageDir');
     } catch (error) {
-      // Even errors should be structured when using --json
       expect(error).to.have.property('name');
       if (error instanceof Error) {
         expect(error.name).to.be.a('string');
