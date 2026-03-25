@@ -21,6 +21,7 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'scan');
 
 export default class Scan extends ScanBase {
+  public static readonly state = 'beta';
   public static readonly summary = messages.getMessage('summary', ['script']);
   public static readonly description = messages.getMessage('description');
   public static readonly examples = messages.getMessages('examples', [

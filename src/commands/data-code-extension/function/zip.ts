@@ -21,6 +21,7 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'zip');
 
 export default class Zip extends ZipBase {
+  public static readonly state = 'beta';
   public static readonly summary = messages.getMessage('summary', ['function']);
   public static readonly description = messages.getMessage('description');
   public static readonly examples = messages.getMessages('examples', [
