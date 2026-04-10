@@ -28,6 +28,9 @@ jobs:
         with:
           node-version: lts/*
 
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli
+
       - name: Install Node.js dependencies and compile
         run: yarn install && yarn compile
 
