@@ -43,7 +43,7 @@ jobs:
         # ── Mock Salesforce server + fake org auth ────────────────────────────────
 
       - name: Start mock Salesforce server
-        run: python scripts/mock_sf_server.py &
+        run: nohup python scripts/mock_sf_server.py > /tmp/mock_sf_server.log 2>&1 &
         env:
           MOCK_SF_PORT: '8888'
 
