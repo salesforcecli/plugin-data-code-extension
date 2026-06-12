@@ -6,6 +6,8 @@ Scan the Data Code Extension %s package for permissions and dependencies.
 
 Scans Python files in an initialized Data Code Extension package directory to identify required permissions and dependencies. Updates the config.json and requirements.txt files based on the code analysis.
 
+This command requires Python 3.11 and the salesforce-data-customcode package to be installed. The package includes pipreqs, which is used to scan Python files for external package dependencies.
+
 # examples.script
 
 - Scan with a custom entrypoint file:
@@ -33,6 +35,30 @@ Scans Python files in an initialized Data Code Extension package directory to id
 - Scan without updating the requirements.txt file:
 
   <%= config.bin %> data-code-extension function scan --entrypoint ./my-function-package/payload/entrypoint.py --no-requirements
+
+# info.checkingPython
+
+Checking Python version...
+
+# info.pythonFound
+
+Python %s found at '%s'
+
+# info.checkingPackages
+
+Checking required Python packages...
+
+# info.packageFound
+
+Package '%s' version %s found
+
+# info.checkingBinary
+
+Checking datacustomcode binary...
+
+# info.binaryFound
+
+Datacustomcode binary version %s found
 
 # info.executingScan
 
