@@ -26,7 +26,6 @@ export type FunctionInitFlags = BaseInitFlags & {
 
 // eslint-disable-next-line sf-plugin/only-extend-SfCommand
 export default class Init extends InitBase<FunctionInitFlags> {
-  public static readonly state = 'beta';
   public static readonly summary = messages.getMessage('summary', ['function']);
   public static readonly description = messages.getMessage('description');
   public static readonly examples = messages.getMessages('examples', ['function', 'function', 'function']);
