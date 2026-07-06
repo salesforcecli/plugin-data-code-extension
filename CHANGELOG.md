@@ -1,3 +1,9 @@
+## [1.3.2](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.3.1...1.3.2) (2026-07-06)
+
+### Bug Fixes
+
+- correct '--target-org' and '--package-version' flag description ([155b47d](https://github.com/salesforcecli/plugin-data-code-extension/commit/155b47d254c305057fd45e93c5a5f5e2680d06e6))
+
 ## [1.3.1](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.3.0...1.3.1) (2026-06-15)
 
 ### Bug Fixes
