@@ -110,7 +110,7 @@ Version of the package to deploy.
 
 # flags.packageVersion.description
 
-The version string for your package deployment. Use semantic versioning (such as 1.0.0) to track different releases of your code.
+Reserved for future use.
 
 # flags.description.summary
 
