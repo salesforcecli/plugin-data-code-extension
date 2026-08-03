@@ -133,12 +133,14 @@ describe('zipBuilder.createZip', () => {
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('creates deployment.zip with all non-DS_Store files at relative paths', async () => {
+  it('creates deployment.zip excluding .DS_Store and external_callout_config.json', async () => {
     const payload = path.join(tempDir, 'payload');
     mkdirSync(path.join(payload, 'sub'), { recursive: true });
     writeFileSync(path.join(payload, 'a.py'), 'print(1)');
     writeFileSync(path.join(payload, 'sub', 'b.py'), 'print(2)');
     writeFileSync(path.join(payload, '.DS_Store'), 'junk');
+    // Local-only credentials must never be packaged into the deployment archive.
+    writeFileSync(path.join(payload, 'external_callout_config.json'), '{"secret":"key"}');
 
     const result = await createZip('payload');
 
