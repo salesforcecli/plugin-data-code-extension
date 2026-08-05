@@ -1,3 +1,9 @@
+## [1.3.3](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.3.2...1.3.3) (2026-08-05)
+
+### Bug Fixes
+
+- exclude credential file from zip for external-callout ([d0160c5](https://github.com/salesforcecli/plugin-data-code-extension/commit/d0160c5da65f7fcae0d9c13962cb66a4eb41a306))
+
 ## [1.3.2](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.3.1...1.3.2) (2026-07-06)
 
 ### Bug Fixes
