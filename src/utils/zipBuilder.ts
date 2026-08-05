@@ -29,6 +29,8 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'datacodeBinaryExecutor');
 
 export const ZIP_FILE_NAME = 'deployment.zip';
+export const EXTERNAL_CALLOUT_CREDENTIAL = 'external_callout_config.json';
+const EXCLUDED_FILENAMES = new Set(['.DS_Store', EXTERNAL_CALLOUT_CREDENTIAL]);
 export const DEPENDENCIES_ARCHIVE_NAME = 'native_dependencies';
 export const DEPENDENCIES_ARCHIVE_FULL_NAME = `${DEPENDENCIES_ARCHIVE_NAME}.tar.gz`;
 export const DEPENDENCIES_ARCHIVE_PATH = path.join('payload', 'archives', DEPENDENCIES_ARCHIVE_FULL_NAME);
@@ -248,6 +250,7 @@ export async function prepareDependencyArchive(
 
 async function collectFiles(directory: string): Promise<string[]> {
   // Match Python `os.walk(path)` (default `followlinks=False`) + `zipfile.write`:
+  // - Files in EXCLUDED_FILENAMES (.DS_Store, external_callout_config.json) are skipped.
   // - Real subdirectories are recursed.
   // - Directory symlinks are NOT recursed (Python `is_dir(follow_symlinks=False)` is False).
   // - Regular files and file symlinks are both included; their contents are read
@@ -258,7 +261,7 @@ async function collectFiles(directory: string): Promise<string[]> {
     const nested = await Promise.all(
       entries.map(async (entry) => {
         const full = path.join(current, entry.name);
-        if (entry.name === '.DS_Store') {
+        if (EXCLUDED_FILENAMES.has(entry.name)) {
           return [];
         }
         if (entry.isDirectory()) {
@@ -290,7 +293,8 @@ async function collectFiles(directory: string): Promise<string[]> {
 
 /**
  * Creates `deployment.zip` (DEFLATE-compressed) at the current working
- * directory containing every file under `directory` except `.DS_Store`.
+ * directory containing every file under `directory` except those in
+ * EXCLUDED_FILENAMES (`.DS_Store` and the local `external_callout_config.json`).
  * Archive entry names are relative to `directory`, matching the Python
  * `os.path.relpath(abs_path, directory)` behavior.
  */
