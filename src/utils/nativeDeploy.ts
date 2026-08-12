@@ -39,9 +39,7 @@ const CONFIG_FILE = 'config.json';
 const DEFAULT_NETWORK = 'default';
 
 /**
- * User-facing CPU size -> Data Cloud wire compute type. Mirrors `COMPUTE_TYPES`
- * in `datacustomcode/deploy.py`; the deliberately non-obvious mapping (e.g.
- * `CPU_2XL` -> `CPU_M`) must be preserved exactly.
+ * Data Cloud wire compute type. Mirrors `COMPUTE_TYPES` in `datacustomcode/deploy.py`
  */
 export const COMPUTE_TYPES: Record<string, string> = {
   CPU_L: 'CPU_XS',
