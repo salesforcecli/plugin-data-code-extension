@@ -15,8 +15,8 @@
  */
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages, Org } from '@salesforce/core';
-import { DatacodeBinaryExecutor, type DatacodeRunExecutionResult } from '../utils/datacodeBinaryExecutor.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
+import { PythonRunner, splitDependencies } from '../utils/pythonRunner.js';
 import { type SharedResultProps } from './types.js';
 
 export type BaseRunFlags = {
@@ -31,7 +31,6 @@ export type RunResult = SharedResultProps & {
   targetOrg?: string;
   status?: string;
   output?: string;
-  executionResult?: DatacodeRunExecutionResult;
 };
 
 // eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
@@ -43,18 +42,19 @@ export abstract class RunBase extends SfCommand<RunResult> {
     const codeType = this.getCodeType();
     const messages = this.getMessages();
 
-    const packageDir = flags.entrypoint;
+    const entrypoint = flags.entrypoint;
     const targetOrg = flags['target-org'];
     const testWith = flags['test-with'];
     const configFile = flags['config-file'];
-    const dependencies = flags.dependencies;
+    const dependencies = splitDependencies(flags.dependencies);
 
     try {
-      const { pythonInfo, packageInfo, binaryInfo } = await checkEnvironment(
-        this.spinner,
-        this.log.bind(this),
-        messages
-      );
+      // `run` invokes the SDK library (datacustomcode.run.run_entrypoint) through
+      // Python, so it needs Python + the salesforce-data-customcode package but NOT
+      // the datacustomcode console-script binary.
+      const { pythonInfo, packageInfo } = await checkEnvironment(this.spinner, this.log.bind(this), messages, {
+        checkBinary: false,
+      });
 
       let orgUsername: string | undefined;
 
@@ -69,39 +69,31 @@ export abstract class RunBase extends SfCommand<RunResult> {
         this.log(messages.getMessage('info.authenticated', [orgUsername]));
       }
 
-      this.spinner.start(messages.getMessage('info.runningPackage'));
-      const executionResult = await DatacodeBinaryExecutor.executeBinaryRun(
-        packageDir,
-        orgUsername,
-        testWith,
+      // Stream the entrypoint's output live (no spinner, so it doesn't clobber the stream).
+      this.log(messages.getMessage('info.runningPackage'));
+      const executionResult = await PythonRunner.run({
+        pythonCommand: pythonInfo.command,
+        entrypoint,
         configFile,
-        dependencies
-      );
+        dependencies,
+        testFile: testWith,
+        sfCliOrg: orgUsername,
+        onStdout: (chunk) => process.stdout.write(chunk),
+        onStderr: (chunk) => process.stderr.write(chunk),
+      });
 
-      this.spinner.stop();
-      this.log(messages.getMessage('info.runComplete', [packageDir]));
-
-      if (executionResult.stdout) {
-        this.log(executionResult.stdout);
-      }
-
-      if (executionResult.stderr) {
-        this.warn(executionResult.stderr);
-      }
-
+      this.log(messages.getMessage('info.runComplete', [entrypoint]));
       this.log(messages.getMessage('info.runSuccess'));
 
       return {
         success: true,
         pythonVersion: pythonInfo,
         packageInfo,
-        binaryInfo,
         codeType,
-        packageDir,
+        packageDir: entrypoint,
         targetOrg: orgUsername,
-        status: executionResult.status,
-        output: executionResult.output,
-        executionResult,
+        status: 'Success',
+        output: executionResult.stdout,
         message: messages.getMessage('info.runSuccess'),
       };
     } catch (error) {

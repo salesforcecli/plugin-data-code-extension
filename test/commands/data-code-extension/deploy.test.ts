@@ -23,79 +23,47 @@ import { SfError, Org, Connection } from '@salesforce/core';
 import * as sinon from 'sinon';
 import ScriptDeploy from '../../../src/commands/data-code-extension/script/deploy.js';
 import FunctionDeploy from '../../../src/commands/data-code-extension/function/deploy.js';
-import { PythonChecker } from '../../../src/utils/pythonChecker.js';
-import { PipChecker } from '../../../src/utils/pipChecker.js';
-import { DatacodeBinaryChecker } from '../../../src/utils/datacodeBinaryChecker.js';
-import { DatacodeBinaryExecutor } from '../../../src/utils/datacodeBinaryExecutor.js';
+import { NativeDeployer } from '../../../src/utils/nativeDeploy.js';
 
 describe('data-code-extension deploy', () => {
   const $$ = new TestContext();
   let sfCommandStubs: ReturnType<typeof stubSfCommandUx>;
-  let pythonCheckerStub: sinon.SinonStub;
-  let pipCheckerStub: sinon.SinonStub;
-  let binaryCheckerStub: sinon.SinonStub;
-  let binaryDeployStub: sinon.SinonStub;
+  let deployStub: sinon.SinonStub;
   let mockOrg: Org;
   let mockConnection: Connection;
   let testDir: string;
 
-  beforeEach(async () => {
-    // Create a temporary directory for testing
+  beforeEach(() => {
+    // Create a temporary directory to satisfy the required, existing --package-dir flag.
     testDir = path.join(os.tmpdir(), `test-deploy-${Date.now()}`);
     fs.mkdirSync(testDir, { recursive: true });
     sfCommandStubs = stubSfCommandUx($$.SANDBOX);
 
-    // Create mock connection
     mockConnection = {
       refreshAuth: $$.SANDBOX.stub().resolves(),
     } as unknown as Connection;
 
-    // Create mock org
     mockOrg = {
       getUsername: () => 'test@example.com',
       getConnection: () => mockConnection,
     } as unknown as Org;
 
-    // Stub Org.create to return our mock org
     $$.SANDBOX.stub(Org, 'create').resolves(mockOrg);
 
-    // Stub PythonChecker
-    pythonCheckerStub = $$.SANDBOX.stub(PythonChecker, 'checkPython311').resolves({
-      command: 'python3',
-      version: '3.11.5',
-      major: 3,
-      minor: 11,
-      patch: 5,
-    });
-
-    // Stub PipChecker
-    pipCheckerStub = $$.SANDBOX.stub(PipChecker, 'checkPackage').resolves({
-      name: 'salesforce-data-customcode',
+    // The command now delegates the whole deploy to NativeDeployer.deploy (the native
+    // TypeScript port of the SDK's deploy_full); stub it the way the old suite stubbed
+    // DatacodeBinaryExecutor.executeBinaryDeploy. It returns a NativeDeployResult.
+    deployStub = $$.SANDBOX.stub(NativeDeployer, 'deploy').resolves({
+      success: true,
+      codeType: 'script',
+      name: 'test_script',
       version: '1.0.0',
-      location: '/usr/local/lib/python3.11/site-packages',
-      pipCommand: 'pip3',
-    });
-
-    // Stub DatacodeBinaryChecker.checkBinary
-    binaryCheckerStub = $$.SANDBOX.stub(DatacodeBinaryChecker, 'checkBinary').resolves({
-      command: 'datacustomcode',
-      version: '1.0.0',
-      path: '/usr/local/bin/datacustomcode',
-    });
-
-    // Stub DatacodeBinaryExecutor.executeBinaryDeploy
-    binaryDeployStub = $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryDeploy').resolves({
-      stdout: 'Deployment successful',
-      stderr: '',
-      deploymentId: 'dep-123456',
-      endpointUrl: 'https://api.salesforce.com/data-cloud/endpoint/abc123',
-      status: 'ACTIVE',
+      status: 'Deployed',
     });
   });
 
   afterEach(() => {
     $$.restore();
-    // Clean up test directory
     if (testDir && fs.existsSync(testDir)) {
       fs.rmSync(testDir, { recursive: true, force: true });
     }
@@ -117,12 +85,14 @@ describe('data-code-extension deploy', () => {
       ]);
 
       expect(sfCommandStubs.log.calledWith('Data Code Extension deployment completed successfully!')).to.be.true;
-      expect(binaryDeployStub.calledOnce).to.be.true;
-      expect(binaryDeployStub.firstCall.args[0]).to.equal('test-script');
-      expect(binaryDeployStub.firstCall.args[1]).to.equal('1.0.0');
-      expect(binaryDeployStub.firstCall.args[2]).to.equal('Test script deployment');
-      expect(binaryDeployStub.firstCall.args[3]).to.equal(testDir);
-      expect(binaryDeployStub.firstCall.args[5]).to.equal('CPU_2XL'); // Default CPU size
+      expect(deployStub.calledOnce).to.be.true;
+      const opts = deployStub.firstCall.args[0] as Record<string, unknown>;
+      expect(opts.name).to.equal('test-script');
+      expect(opts.version).to.equal('1.0.0');
+      expect(opts.description).to.equal('Test script deployment');
+      expect(opts.packageDir).to.equal(testDir);
+      expect(opts.cpuSize).to.equal('CPU_2XL'); // Default CPU size
+      expect(opts.connection).to.equal(mockConnection);
     });
 
     it('should deploy with custom CPU size', async () => {
@@ -141,7 +111,8 @@ describe('data-code-extension deploy', () => {
         'CPU_4XL',
       ]);
 
-      expect(binaryDeployStub.firstCall.args[5]).to.equal('CPU_4XL');
+      const opts = deployStub.firstCall.args[0] as Record<string, unknown>;
+      expect(opts.cpuSize).to.equal('CPU_4XL');
     });
 
     it('should deploy with network configuration', async () => {
@@ -160,11 +131,11 @@ describe('data-code-extension deploy', () => {
         'host',
       ]);
 
-      expect(binaryDeployStub.firstCall.args[6]).to.equal('host');
+      const opts = deployStub.firstCall.args[0] as Record<string, unknown>;
+      expect(opts.network).to.equal('host');
     });
 
     it('should handle authentication failure', async () => {
-      // Override the mock connection to throw an error
       mockConnection.refreshAuth = $$.SANDBOX.stub().rejects(new Error('Authentication failed'));
 
       try {
@@ -184,11 +155,13 @@ describe('data-code-extension deploy', () => {
       } catch (error) {
         expect(error).to.be.instanceOf(Error);
       }
+      // The deploy must not run when auth fails.
+      expect(deployStub.called).to.be.false;
     });
 
-    it('should handle deployment conflicts', async () => {
-      binaryDeployStub.rejects(
-        new SfError('A deployment with name "test-script" and version "1.0.0" already exists', 'DeployConflict')
+    it('should surface a deployment name conflict from the deployer', async () => {
+      deployStub.rejects(
+        new SfError('Deployment test_script exists. Please use a different name.', 'DeploymentExists')
       );
 
       try {
@@ -207,7 +180,7 @@ describe('data-code-extension deploy', () => {
         expect.fail('Should have thrown an error');
       } catch (error) {
         expect(error).to.be.instanceOf(SfError);
-        expect((error as SfError).name).to.equal('DeployConflict');
+        expect((error as SfError).name).to.equal('DeploymentExists');
       }
     });
   });
@@ -228,8 +201,9 @@ describe('data-code-extension deploy', () => {
       ]);
 
       expect(sfCommandStubs.log.calledWith('Data Code Extension deployment completed successfully!')).to.be.true;
-      expect(binaryDeployStub.calledOnce).to.be.true;
-      expect(binaryDeployStub.firstCall.args[0]).to.equal('test-function');
+      expect(deployStub.calledOnce).to.be.true;
+      const opts = deployStub.firstCall.args[0] as Record<string, unknown>;
+      expect(opts.name).to.equal('test-function');
     });
 
     it('should validate CPU size options', async () => {
@@ -250,13 +224,14 @@ describe('data-code-extension deploy', () => {
         ]);
         expect.fail('Should have thrown an error');
       } catch (error) {
-        // Flag validation should catch invalid CPU size
+        // Flag validation should catch invalid CPU size before deploy runs.
         expect(error).to.be.instanceOf(Error);
+        expect(deployStub.called).to.be.false;
       }
     });
 
-    it('should handle quota exceeded errors', async () => {
-      binaryDeployStub.rejects(new SfError('Deployment quota exceeded for the organization', 'DeployQuotaExceeded'));
+    it('should surface a quota exceeded error from the deployer', async () => {
+      deployStub.rejects(new SfError('Deployment quota exceeded for the organization', 'DeployQuotaExceeded'));
 
       try {
         await FunctionDeploy.run([
@@ -278,8 +253,8 @@ describe('data-code-extension deploy', () => {
       }
     });
 
-    it('should handle package validation errors', async () => {
-      binaryDeployStub.rejects(new SfError('Package validation failed', 'DeployPackageInvalid'));
+    it('should surface a package validation error from the deployer', async () => {
+      deployStub.rejects(new SfError('Package validation failed', 'DeployPackageInvalid'));
 
       try {
         await FunctionDeploy.run([
@@ -303,41 +278,7 @@ describe('data-code-extension deploy', () => {
   });
 
   describe('deployment result handling', () => {
-    it('should display deployment ID when available', async () => {
-      await ScriptDeploy.run([
-        '--name',
-        'test-script',
-        '--package-version',
-        '1.0.0',
-        '--description',
-        'Test script deployment',
-        '--package-dir',
-        testDir,
-        '--target-org',
-        'test@example.com',
-      ]);
-
-      expect(sfCommandStubs.log.calledWith('Data Code Extension deployment completed successfully!')).to.be.true;
-    });
-
-    it('should display endpoint URL when available', async () => {
-      await ScriptDeploy.run([
-        '--name',
-        'test-script',
-        '--package-version',
-        '1.0.0',
-        '--description',
-        'Test script deployment',
-        '--package-dir',
-        testDir,
-        '--target-org',
-        'test@example.com',
-      ]);
-
-      expect(sfCommandStubs.log.calledWith('Data Code Extension deployment completed successfully!')).to.be.true;
-    });
-
-    it('should return structured JSON result', async () => {
+    it('should return a structured result with the deployer name/version/status', async () => {
       const result = await ScriptDeploy.run([
         '--name',
         'test-script',
@@ -353,15 +294,33 @@ describe('data-code-extension deploy', () => {
 
       expect(result).to.have.property('success', true);
       expect(result).to.have.property('codeType', 'script');
-      expect(result).to.have.property('deploymentId', 'dep-123456');
-      expect(result).to.have.property('endpointUrl');
-      expect(result).to.have.property('status', 'ACTIVE');
+      expect(result).to.have.property('name', 'test_script');
+      expect(result).to.have.property('version', '1.0.0');
+      expect(result).to.have.property('status', 'Deployed');
+      expect(result).to.have.property('targetOrg', 'test@example.com');
+    });
+
+    it('should report the function code type in the result', async () => {
+      const result = await FunctionDeploy.run([
+        '--name',
+        'test-function',
+        '--package-version',
+        '1.0.0',
+        '--description',
+        'Test function deployment',
+        '--package-dir',
+        testDir,
+        '--target-org',
+        'test@example.com',
+      ]);
+
+      expect(result).to.have.property('codeType', 'function');
     });
   });
 
   describe('error scenarios', () => {
-    it('should handle Python not found', async () => {
-      pythonCheckerStub.rejects(new SfError('Python 3.11+ is required', 'PythonNotFound'));
+    it('should surface a network error from the deployer', async () => {
+      deployStub.rejects(new SfError('Network error occurred during deployment', 'DeployNetworkError'));
 
       try {
         await ScriptDeploy.run([
@@ -379,100 +338,7 @@ describe('data-code-extension deploy', () => {
         expect.fail('Should have thrown an error');
       } catch (error: unknown) {
         expect(error).to.be.instanceOf(Error);
-        // Check if it's an SfCommandError with a cause
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        const cause = (error as any).cause;
-        if (cause) {
-          expect(cause).to.be.instanceOf(SfError);
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          expect(cause.name).to.equal('PythonNotFound');
-        } else if (error instanceof SfError) {
-          expect(error.name).to.equal('PythonNotFound');
-        }
-      }
-    });
-
-    it('should handle pip package not found', async () => {
-      pipCheckerStub.rejects(new SfError('Package not found', 'PackageNotFound'));
-
-      try {
-        await ScriptDeploy.run([
-          '--name',
-          'test-script',
-          '--package-version',
-          '1.0.0',
-          '--description',
-          'Test script deployment',
-          '--package-dir',
-          testDir,
-          '--target-org',
-          'test@example.com',
-        ]);
-        expect.fail('Should have thrown an error');
-      } catch (error: unknown) {
-        expect(error).to.be.instanceOf(Error);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        const cause = (error as any).cause;
-        if (cause) {
-          expect(cause).to.be.instanceOf(SfError);
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          expect(cause.name).to.equal('PackageNotFound');
-        } else if (error instanceof SfError) {
-          expect(error.name).to.equal('PackageNotFound');
-        }
-      }
-    });
-
-    it('should handle binary not found', async () => {
-      binaryCheckerStub.rejects(new SfError('Binary not found', 'BinaryNotFound'));
-
-      try {
-        await ScriptDeploy.run([
-          '--name',
-          'test-script',
-          '--package-version',
-          '1.0.0',
-          '--description',
-          'Test script deployment',
-          '--package-dir',
-          testDir,
-          '--target-org',
-          'test@example.com',
-        ]);
-        expect.fail('Should have thrown an error');
-      } catch (error: unknown) {
-        expect(error).to.be.instanceOf(Error);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        const cause = (error as any).cause;
-        if (cause) {
-          expect(cause).to.be.instanceOf(SfError);
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          expect(cause.name).to.equal('BinaryNotFound');
-        } else if (error instanceof SfError) {
-          expect(error.name).to.equal('BinaryNotFound');
-        }
-      }
-    });
-
-    it('should handle network errors during deployment', async () => {
-      binaryDeployStub.rejects(new SfError('Network error occurred during deployment', 'DeployNetworkError'));
-
-      try {
-        await ScriptDeploy.run([
-          '--name',
-          'test-script',
-          '--package-version',
-          '1.0.0',
-          '--description',
-          'Test script deployment',
-          '--package-dir',
-          testDir,
-          '--target-org',
-          'test@example.com',
-        ]);
-        expect.fail('Should have thrown an error');
-      } catch (error: unknown) {
-        expect(error).to.be.instanceOf(Error);
+        // The framework may wrap the thrown SfError as a cause on the command error.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         const cause = (error as any).cause;
         if (cause) {

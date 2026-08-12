@@ -159,3 +159,91 @@ The --%s flag requires a non-empty value.
 # error.flagTooLong
 
 The --%s flag value exceeds the maximum length of %s characters (%s provided).
+
+# info.nameSanitized
+
+API name '%s' was sanitized to '%s'.
+
+# info.inferredFeature
+
+Inferred feature: %s
+
+# info.creatingDeployment
+
+Creating deployment '%s'...
+
+# info.zippingPackage
+
+Building deployment package (deployment.zip)...
+
+# info.uploadingPackage
+
+Uploading deployment package...
+
+# info.waitingForDeployment
+
+Waiting for deployment to complete...
+
+# info.deploymentStatusPolled
+
+Deployment status: %s
+
+# info.creatingDataTransform
+
+Creating data transform...
+
+# error.invalidCpuSize
+
+Invalid CPU size '%s'. Available options: %s.
+
+# error.invalidApiName
+
+API name '%s' is invalid and could not be sanitized to a valid name.
+
+# error.apiNameMustStartWithLetter
+
+API name '%s' must begin with a letter. The name can only contain underscores and alphanumeric characters, must begin with a letter, not include spaces, not end with an underscore, and not contain two consecutive underscores.
+
+# error.functionSignatureMismatch
+
+Function signature does not match a supported type. Use SearchIndexChunkingV1Request and SearchIndexChunkingV1Response in the function signature.
+
+# error.configNotFound
+
+config.json not found at %s.
+
+# error.configInvalidJson
+
+config.json at %s is not valid JSON.
+
+# error.configMissingFields
+
+config.json at %s is missing required fields: %s.
+
+# error.configInvalid
+
+config.json at %s is invalid: %s.
+
+# error.dmoRequiresDataObjects
+
+DMO transforms require 'dataObjects' in config.json describing the schema of each output DMO.
+
+# error.deploymentExists
+
+Deployment %s exists. Please use a different name.
+
+# error.emptyDeploymentResponse
+
+The deployment request returned no file upload URL. Verify the org has Data Cloud enabled and you have permission to create custom code deployments.
+
+# error.uploadFailed
+
+Failed to upload the deployment package (HTTP %s): %s
+
+# error.deploymentTimedOut
+
+Deployment timed out.
+
+# error.deploymentFailedStatus
+
+Deployment failed with status '%s'.

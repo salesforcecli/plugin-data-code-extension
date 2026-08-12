@@ -33,6 +33,9 @@ docs
 *.sig
 package.json.bak.
 
+# generated deployment archive (produced by zip/deploy)
+deployment.zip
+
 
 npm-shrinkwrap.json
 oclif.manifest.json

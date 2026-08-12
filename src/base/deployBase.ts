@@ -15,8 +15,7 @@
  */
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages, Org, SfError } from '@salesforce/core';
-import { DatacodeBinaryExecutor, type DatacodeDeployExecutionResult } from '../utils/datacodeBinaryExecutor.js';
-import { checkEnvironment } from '../utils/environmentChecker.js';
+import { NativeDeployer } from '../utils/nativeDeploy.js';
 import { type SharedResultProps } from './types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -34,10 +33,11 @@ export type BaseDeployFlags = {
 
 export type DeployResult = SharedResultProps & {
   targetOrg: string;
+  name: string;
+  version: string;
+  status: string;
   deploymentId?: string;
   endpointUrl?: string;
-  status?: string;
-  executionResult?: DatacodeDeployExecutionResult;
 };
 
 // eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
@@ -135,12 +135,6 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
     }
 
     try {
-      const { pythonInfo, packageInfo, binaryInfo } = await checkEnvironment(
-        this.spinner,
-        this.log.bind(this),
-        cmdMessages
-      );
-
       const orgUsername = targetOrg.getUsername() ?? 'target org';
       this.spinner.start(cmdMessages.getMessage('info.authenticating', [orgUsername]));
 
@@ -151,32 +145,29 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
       this.log(cmdMessages.getMessage('info.authenticated', [orgUsername]));
 
       this.log(cmdMessages.getMessage('info.deployingPackage'));
-      const executionResult = await DatacodeBinaryExecutor.executeBinaryDeploy(
+      const result = await NativeDeployer.deploy({
         name,
         version,
         description,
         packageDir,
-        orgUsername,
         cpuSize,
-        network
-      );
+        network,
+        connection,
+        log: this.log.bind(this),
+      });
 
-      this.log(cmdMessages.getMessage('info.deploymentComplete', [name, version]));
+      this.log(cmdMessages.getMessage('info.deploymentComplete', [result.name, result.version]));
 
       this.log(cmdMessages.getMessage('info.deploySuccess'));
 
       return {
         success: true,
-        pythonVersion: pythonInfo,
-        packageInfo,
-        binaryInfo,
         codeType,
         packageDir,
         targetOrg: orgUsername,
-        deploymentId: executionResult.deploymentId,
-        endpointUrl: executionResult.endpointUrl,
-        status: executionResult.status,
-        executionResult,
+        name: result.name,
+        version: result.version,
+        status: result.status,
         message: cmdMessages.getMessage('info.deploySuccess'),
       };
     } catch (error) {
