@@ -380,7 +380,7 @@ describe('data-code-extension deploy', () => {
       } catch (error: unknown) {
         expect(error).to.be.instanceOf(Error);
         // Check if it's an SfCommandError with a cause
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
         const cause = (error as any).cause;
         if (cause) {
           expect(cause).to.be.instanceOf(SfError);
@@ -411,7 +411,7 @@ describe('data-code-extension deploy', () => {
         expect.fail('Should have thrown an error');
       } catch (error: unknown) {
         expect(error).to.be.instanceOf(Error);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
         const cause = (error as any).cause;
         if (cause) {
           expect(cause).to.be.instanceOf(SfError);
@@ -442,7 +442,7 @@ describe('data-code-extension deploy', () => {
         expect.fail('Should have thrown an error');
       } catch (error: unknown) {
         expect(error).to.be.instanceOf(Error);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
         const cause = (error as any).cause;
         if (cause) {
           expect(cause).to.be.instanceOf(SfError);
@@ -473,7 +473,7 @@ describe('data-code-extension deploy', () => {
         expect.fail('Should have thrown an error');
       } catch (error: unknown) {
         expect(error).to.be.instanceOf(Error);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
         const cause = (error as any).cause;
         if (cause) {
           expect(cause).to.be.instanceOf(SfError);
