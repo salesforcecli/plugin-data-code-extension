@@ -18,6 +18,7 @@ import { request as httpsRequest } from 'node:https';
 import path from 'node:path';
 import { debuglog } from 'node:util';
 import { Messages, SfError, type Connection } from '@salesforce/core';
+import { decodeHTML } from 'entities';
 import { findBaseDirectory, getPackageType, type CodeType } from './nativeScan.js';
 import { zipWithSfError, ZIP_FILE_NAME, type ZipResult } from './zipBuilder.js';
 
@@ -529,30 +530,13 @@ function isConflictError(err: unknown): boolean {
 }
 
 /**
- * Decode one numeric character reference to its code point, leaving the raw
- * entity untouched if the code point is invalid. `String.fromCodePoint` throws
- * `RangeError` for out-of-range or NaN inputs (e.g. `&#9999999999;`); swallowing
- * it here matches Python's `html.unescape`, which never raises.
+ * Unescape the presigned upload URL, which Data Cloud returns HTML-escaped
+ * (e.g. `&amp;` between query params). Delegates to `entities.decodeHTML`, which
+ * covers the full entity set and — unlike a hand-rolled decoder — never throws
+ * on malformed numeric references, matching Python's `html.unescape`.
  */
-function decodeCodePoint(entity: string, code: number): string {
-  try {
-    return String.fromCodePoint(code);
-  } catch {
-    return entity;
-  }
-}
-
-/** Minimal `html.unescape` covering the entities a presigned URL can contain. */
 export function htmlUnescape(input: string): string {
-  return input
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#0*39;/g, "'")
-    .replace(/&#x0*27;/gi, "'")
-    .replace(/&#(\d+);/g, (match: string, dec: string) => decodeCodePoint(match, Number(dec)))
-    .replace(/&#x([0-9a-fA-F]+);/g, (match: string, hex: string) => decodeCodePoint(match, parseInt(hex, 16)))
-    .replace(/&amp;/g, '&'); // must run last so we don't double-decode
+  return decodeHTML(input);
 }
 
 /**

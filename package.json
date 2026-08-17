@@ -6,6 +6,7 @@
     "@oclif/core": "^4",
     "@salesforce/core": "^8.2.7",
     "@salesforce/sf-plugins-core": "^12",
+    "entities": "^4.5.0",
     "jszip": "^3.10.1"
   },
   "devDependencies": {

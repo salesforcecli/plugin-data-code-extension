@@ -347,6 +347,10 @@ describe('nativeDeploy.htmlUnescape', () => {
     expect(htmlUnescape('a&#39;b&#x27;c')).to.equal("a'b'c");
     expect(htmlUnescape('&lt;tag&gt;')).to.equal('<tag>');
   });
+
+  it('does not throw on an out-of-range numeric reference', () => {
+    expect(() => htmlUnescape('x&#9999999999;y')).to.not.throw();
+  });
 });
 
 describe('nativeDeploy.waitForDeployment', () => {
