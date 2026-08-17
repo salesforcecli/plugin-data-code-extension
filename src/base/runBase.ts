@@ -50,11 +50,8 @@ export abstract class RunBase extends SfCommand<RunResult> {
 
     try {
       // `run` invokes the SDK library (datacustomcode.run.run_entrypoint) through
-      // Python, so it needs Python + the salesforce-data-customcode package but NOT
-      // the datacustomcode console-script binary.
-      const { pythonInfo, packageInfo } = await checkEnvironment(this.spinner, this.log.bind(this), messages, {
-        checkBinary: false,
-      });
+      // Python, so it needs Python + the salesforce-data-customcode package.
+      const { pythonInfo, packageInfo } = await checkEnvironment(this.spinner, this.log.bind(this), messages);
 
       let orgUsername: string | undefined;
 

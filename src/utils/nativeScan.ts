@@ -126,7 +126,7 @@ export async function getPackageType(baseDirectory: string): Promise<CodeType> {
   const type = parsed.type;
   if (typeof type !== 'string') {
     throw new SfError(
-      `Package type not found in SDK config at ${configPath}. Please run 'datacustomcode init' to initialize the project.`,
+      `Package type not found in SDK config at ${configPath}. Please run 'sf data-code-extension <script|function> init' to initialize the project.`,
       'MissingPackageType'
     );
   }

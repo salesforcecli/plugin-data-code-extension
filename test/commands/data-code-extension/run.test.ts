@@ -64,8 +64,7 @@ describe('data-code-extension run', () => {
     orgCreateStub = $$.SANDBOX.stub(Org, 'create').resolves(mockOrg);
 
     // The environment check shells out to Python/pip; stub the static checkers so the
-    // command exercises its own logic without a real interpreter. `run` passes
-    // checkBinary:false, so DatacodeBinaryChecker is never consulted here.
+    // command exercises its own logic without a real interpreter.
     $$.SANDBOX.stub(PythonChecker, 'checkPython311').resolves({
       command: 'python3',
       version: '3.11.5',

@@ -15,7 +15,6 @@
  */
 import { promises as fs, createReadStream, statSync } from 'node:fs';
 import { request as httpsRequest } from 'node:https';
-import { request as httpRequest } from 'node:http';
 import path from 'node:path';
 import { debuglog } from 'node:util';
 import { Messages, SfError, type Connection } from '@salesforce/core';
@@ -39,7 +38,9 @@ const CONFIG_FILE = 'config.json';
 const DEFAULT_NETWORK = 'default';
 
 /**
- * Data Cloud wire compute type. Mirrors `COMPUTE_TYPES` in `datacustomcode/deploy.py`
+ * Maps the user-facing `--cpu-size` value to the Data Cloud wire compute type.
+ * The offset (e.g. CPU_2XL -> CPU_M) is intentional and must match exactly; it
+ * mirrors `COMPUTE_TYPES` in `datacustomcode/deploy.py`, so do not "correct" it.
  */
 export const COMPUTE_TYPES: Record<string, string> = {
   CPU_L: 'CPU_XS',
@@ -481,10 +482,13 @@ export async function getConfig(
     raw = await fs.readFile(configPath, 'utf8');
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-      throw new SfError(messages.getMessage('error.configNotFound', [configPath]), 'ConfigNotFound', [
-        "Run '<type> init' to scaffold the package",
-        "Run '<type> scan' to populate config.json before deploying",
-      ]);
+      throw new SfError(
+        messages.getMessage('error.configNotFound', [configPath]),
+        'ConfigNotFound',
+        // getMessages consumes tokens sequentially across the action lines, so pass the
+        // package type once per '%s' (one in each of the two lines).
+        messages.getMessages('actions.configNotFound', [packageType, packageType])
+      );
     }
     throw err;
   }
@@ -524,6 +528,20 @@ function isConflictError(err: unknown): boolean {
   return typeof e?.message === 'string' && /\b409\b|already exists|duplicate/i.test(e.message);
 }
 
+/**
+ * Decode one numeric character reference to its code point, leaving the raw
+ * entity untouched if the code point is invalid. `String.fromCodePoint` throws
+ * `RangeError` for out-of-range or NaN inputs (e.g. `&#9999999999;`); swallowing
+ * it here matches Python's `html.unescape`, which never raises.
+ */
+function decodeCodePoint(entity: string, code: number): string {
+  try {
+    return String.fromCodePoint(code);
+  } catch {
+    return entity;
+  }
+}
+
 /** Minimal `html.unescape` covering the entities a presigned URL can contain. */
 export function htmlUnescape(input: string): string {
   return input
@@ -532,8 +550,8 @@ export function htmlUnescape(input: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&#0*39;/g, "'")
     .replace(/&#x0*27;/gi, "'")
-    .replace(/&#(\d+);/g, (_match, dec: string) => String.fromCodePoint(Number(dec)))
-    .replace(/&#x([0-9a-fA-F]+);/g, (_match, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (match: string, dec: string) => decodeCodePoint(match, Number(dec)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (match: string, hex: string) => decodeCodePoint(match, parseInt(hex, 16)))
     .replace(/&amp;/g, '&'); // must run last so we don't double-decode
 }
 
@@ -543,11 +561,15 @@ export function htmlUnescape(input: string): string {
  */
 async function defaultUploadZip(fileUploadUrl: string, zipPath: string): Promise<void> {
   const url = new URL(htmlUnescape(fileUploadUrl));
+  // Presigned upload URLs are always HTTPS; refuse to PUT the package (customer
+  // code) over plaintext if a non-HTTPS URL is ever returned.
+  if (url.protocol !== 'https:') {
+    throw new SfError(messages.getMessage('error.insecureUploadUrl', [url.protocol]), 'InsecureUploadUrl');
+  }
   const size = statSync(zipPath).size;
-  const transport = url.protocol === 'http:' ? httpRequest : httpsRequest;
 
   await new Promise<void>((resolve, reject) => {
-    const req = transport(
+    const req = httpsRequest(
       url,
       { method: 'PUT', headers: { 'Content-Type': 'application/zip', 'Content-Length': size } },
       (res) => {
@@ -687,8 +709,8 @@ export async function waitForDeployment(
  * first, create the deployment, build+upload the zip, wait for "Deployed", then
  * (scripts only) create the data transform.
  *
- * Exposed as a static method so command-level tests can stub it the same way
- * they previously stubbed `DatacodeBinaryExecutor.executeBinaryDeploy`.
+ * Exposed as a static method so command-level tests can stub the deploy step
+ * without performing real Data Cloud REST calls or uploads.
  */
 export class NativeDeployer {
   public static async deploy(

@@ -52,14 +52,6 @@ Checking required Python packages...
 
 Package '%s' version %s found
 
-# info.checkingBinary
-
-Checking datacustomcode binary...
-
-# info.binaryFound
-
-Datacustomcode binary version %s found
-
 # info.authenticating
 
 Authenticating with Salesforce org '%s'...
@@ -212,6 +204,11 @@ Function signature does not match a supported type. Use SearchIndexChunkingV1Req
 
 config.json not found at %s.
 
+# actions.configNotFound
+
+- Run 'sf data-code-extension %s init' to scaffold the package.
+- Run 'sf data-code-extension %s scan' to populate config.json before deploying.
+
 # error.configInvalidJson
 
 config.json at %s is not valid JSON.
@@ -239,6 +236,10 @@ The deployment request returned no file upload URL. Verify the org has Data Clou
 # error.uploadFailed
 
 Failed to upload the deployment package (HTTP %s): %s
+
+# error.insecureUploadUrl
+
+The deployment upload URL must use HTTPS but a '%s' URL was returned. Refusing to upload the package over an insecure connection.
 
 # error.deploymentTimedOut
 
