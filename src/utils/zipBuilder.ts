@@ -148,7 +148,8 @@ function assertBuildFileExists(label: string, filePath: string): void {
 
 async function copyFile(src: string, dest: string): Promise<void> {
   const data = new Uint8Array(await readFile(src));
-  await writeFile(dest, data);
+  const { mode } = await stat(src);
+  await writeFile(dest, data, { mode });
 }
 
 async function copyTree(src: string, dest: string): Promise<void> {

@@ -22,6 +22,7 @@ import {
   readFileSync,
   symlinkSync,
   chmodSync,
+  statSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
@@ -463,5 +464,54 @@ describe('zipBuilder.prepareDependencyArchive', () => {
     expect(caught!.name).to.equal('DependencyBuildFileMissing');
     expect(caught!.message).to.match(/Dockerfile\.dependencies/);
     expect(missing.calls.build).to.have.length(0);
+  });
+
+  it('stages build_native_dependencies.sh with executable permission preserved', async function () {
+    if (process.platform === 'win32') {
+      this.skip();
+      return;
+    }
+    chmodSync(path.join(baseDir, 'build_native_dependencies.sh'), 0o755);
+
+    const { runner } = makeRunner({
+      imageExists: true,
+      onRun: (mountPath) => {
+        const stagedScript = path.join(mountPath, 'build_native_dependencies.sh');
+        const mode = statSync(stagedScript).mode & 0o777;
+        expect(mode & 0o111, 'staged build script must have executable bits').to.not.equal(0);
+        expect(mode).to.equal(0o755);
+        writeFileSync(path.join(mountPath, 'native_dependencies.tar.gz'), 'data');
+      },
+    });
+
+    await prepareDependencyArchive(baseDir, 'default', 'script', () => {}, runner);
+  });
+
+  it('preserves executable permissions on py-files copied via copyTree (function packages)', async function () {
+    if (process.platform === 'win32') {
+      this.skip();
+      return;
+    }
+    chmodSync(path.join(baseDir, 'build_native_dependencies.sh'), 0o755);
+
+    const { runner } = makeRunner({
+      imageExists: true,
+      onRun: (mountPath) => {
+        const pyFilesSrc = path.join(mountPath, 'py-files');
+        mkdirSync(pyFilesSrc);
+        const execScript = path.join(pyFilesSrc, 'run_me.sh');
+        writeFileSync(execScript, '#!/bin/bash\necho hello\n');
+        chmodSync(execScript, 0o755);
+        writeFileSync(path.join(pyFilesSrc, 'lib.py'), 'pass');
+      },
+    });
+
+    await prepareDependencyArchive(baseDir, 'default', 'function', () => {}, runner);
+
+    const dest = path.join(baseDir, 'payload', 'py-files');
+    const scriptMode = statSync(path.join(dest, 'run_me.sh')).mode & 0o777;
+    const libMode = statSync(path.join(dest, 'lib.py')).mode & 0o777;
+    expect(scriptMode, 'executable script in py-files must retain 0o755').to.equal(0o755);
+    expect(libMode & 0o111, 'non-executable file should not gain execute bits').to.equal(0);
   });
 });
