@@ -40,11 +40,7 @@ export abstract class InitBase<TFlags extends BaseInitFlags = BaseInitFlags> ext
     const additionalFlags = this.getAdditionalFlags(flags);
 
     try {
-      const { pythonInfo, packageInfo, binaryInfo } = await checkEnvironment(
-        this.spinner,
-        this.log.bind(this),
-        messages
-      );
+      const { pythonInfo, packageInfo } = await checkEnvironment(this.spinner, this.log.bind(this), messages);
 
       this.spinner.start(messages.getMessage('info.executingInit'));
       const executionResult = await executeNativeInit({
@@ -66,7 +62,6 @@ export abstract class InitBase<TFlags extends BaseInitFlags = BaseInitFlags> ext
         success: true,
         pythonVersion: pythonInfo,
         packageInfo,
-        binaryInfo,
         codeType,
         packageDir,
         executionResult,

@@ -46,14 +46,6 @@ Checking required Python packages...
 
 Package '%s' version %s found
 
-# info.checkingBinary
-
-Checking datacustomcode binary...
-
-# info.binaryFound
-
-Datacustomcode binary version %s found
-
 # info.authenticating
 
 Authenticating with Salesforce org '%s'...
@@ -85,6 +77,35 @@ Data Code Extension run completed successfully!
 # error.runFailed
 
 Failed to run Data Code Extension package
+
+# error.runExecutionFailed
+
+The package run failed: %s
+
+# actions.runExecutionFailed
+
+- Review the error output above for the failing line in your entrypoint.
+- Run 'sf data-code-extension <type> scan' to refresh config.json and requirements.txt, then try again.
+- Verify the package's dependencies are installed in the active Python environment.
+
+# error.runAuthenticationFailed
+
+Authentication with Salesforce org '%s' failed while running the package.
+
+# actions.runAuthenticationFailed
+
+- Run 'sf org login web --alias <alias>' to (re)authenticate the org.
+- Confirm the org alias or username passed to --target-org is correct.
+- Verify the org has Data Cloud enabled and your user has the required permissions.
+
+# error.runProcessStartFailed
+
+Could not start the Python interpreter '%s': %s
+
+# actions.runProcessStartFailed
+
+- Verify Python 3.11 is installed and on your PATH.
+- Reinstall the SDK with 'pip install salesforce-data-customcode' so 'datacustomcode' is importable.
 
 # flags.entrypoint.summary
 

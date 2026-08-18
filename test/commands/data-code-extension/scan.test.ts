@@ -22,7 +22,6 @@ import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
 import { setPipreqsMock } from '../../../src/utils/nativeScan.js';
 import { PythonChecker } from '../../../src/utils/pythonChecker.js';
 import { PipChecker } from '../../../src/utils/pipChecker.js';
-import { DatacodeBinaryChecker } from '../../../src/utils/datacodeBinaryChecker.js';
 import ScriptScan from '../../../src/commands/data-code-extension/script/scan.js';
 import FunctionScan from '../../../src/commands/data-code-extension/function/scan.js';
 
@@ -71,12 +70,6 @@ describe('data-code-extension scan commands', () => {
       version: '1.0.0',
       location: '/usr/local/lib/python3.11/site-packages',
       pipCommand: 'pip3',
-    });
-
-    $$.SANDBOX.stub(DatacodeBinaryChecker, 'checkBinary').resolves({
-      command: 'datacustomcode',
-      version: '1.0.0',
-      path: '/usr/local/bin/datacustomcode',
     });
   });
 

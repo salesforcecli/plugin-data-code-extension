@@ -15,14 +15,27 @@
  */
 import { Messages } from '@salesforce/core';
 import { PythonChecker, type PythonVersionInfo } from './pythonChecker.js';
-import { PipChecker, type PipPackageInfo } from './pipChecker.js';
-import { DatacodeBinaryChecker, type DatacodeBinaryInfo } from './datacodeBinaryChecker.js';
+import { PipChecker, type PipPackageInfo, type PipUpdateInfo } from './pipChecker.js';
 
 export type EnvironmentCheckResult = {
   pythonInfo: PythonVersionInfo;
   packageInfo: PipPackageInfo;
-  binaryInfo: DatacodeBinaryInfo;
 };
+
+function logUpdateInfo(log: (msg: string) => void, updateInfo: PipUpdateInfo | null): void {
+  if (!updateInfo) return;
+  const pipMessages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'pipChecker');
+  log(
+    pipMessages.getMessage('warn.updateAvailable', [
+      updateInfo.packageName,
+      updateInfo.latestVersion,
+      updateInfo.installedVersion,
+    ])
+  );
+  for (const action of pipMessages.getMessages('actions.updatePackage')) {
+    log(`  ${action}`);
+  }
+}
 
 export async function checkEnvironment(
   spinner: { start: (msg: string) => void; stop: () => void },
@@ -41,28 +54,7 @@ export async function checkEnvironment(
   spinner.stop();
   log(messages.getMessage('info.packageFound', [packageInfo.name, packageInfo.version]));
 
-  // Fire the update check now — it runs in parallel with the binary check so it doesn't add wait time.
-  const updateCheckPromise = PipChecker.checkForUpdate(packageInfo);
+  logUpdateInfo(log, await PipChecker.checkForUpdate(packageInfo));
 
-  spinner.start(messages.getMessage('info.checkingBinary'));
-  const [binaryInfo, updateInfo] = await Promise.all([DatacodeBinaryChecker.checkBinary(), updateCheckPromise]);
-
-  spinner.stop();
-  log(messages.getMessage('info.binaryFound', [binaryInfo.version]));
-
-  if (updateInfo) {
-    const pipMessages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'pipChecker');
-    log(
-      pipMessages.getMessage('warn.updateAvailable', [
-        updateInfo.packageName,
-        updateInfo.latestVersion,
-        updateInfo.installedVersion,
-      ])
-    );
-    for (const action of pipMessages.getMessages('actions.updatePackage')) {
-      log(`  ${action}`);
-    }
-  }
-
-  return { pythonInfo, packageInfo, binaryInfo };
+  return { pythonInfo, packageInfo };
 }

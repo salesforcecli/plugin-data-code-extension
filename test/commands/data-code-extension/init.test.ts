@@ -52,13 +52,6 @@ describe('data-code-extension init commands', () => {
         expect(result.packageInfo).to.have.property('pipCommand');
       }
 
-      // Check binary info if present
-      if (result.binaryInfo) {
-        expect(result.binaryInfo).to.have.property('command');
-        expect(result.binaryInfo).to.have.property('version');
-        // path is optional
-      }
-
       // Check execution result if present (when all prerequisites are met)
       if (result.executionResult) {
         expect(result.executionResult).to.have.property('configPath');

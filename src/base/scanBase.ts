@@ -46,11 +46,7 @@ export abstract class ScanBase extends SfCommand<ScanResult> {
     const workingDir = process.cwd();
 
     try {
-      const { pythonInfo, packageInfo, binaryInfo } = await checkEnvironment(
-        this.spinner,
-        this.log.bind(this),
-        messages
-      );
+      const { pythonInfo, packageInfo } = await checkEnvironment(this.spinner, this.log.bind(this), messages);
 
       this.spinner.start(messages.getMessage('info.executingScan'));
       const executionResult = await executeNativeScan({
@@ -85,7 +81,6 @@ export abstract class ScanBase extends SfCommand<ScanResult> {
         success: true,
         pythonInfo,
         packageInfo,
-        binaryInfo,
         codeType,
         workingDirectory: workingDir,
         executionResult,
