@@ -1,3 +1,13 @@
+# [1.4.0](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.3.3...1.4.0) (2026-08-18)
+
+### Bug Fixes
+
+- address deploy/run PR review feedback ([95e7086](https://github.com/salesforcecli/plugin-data-code-extension/commit/95e70868ecb092ee5ca6eb9e5b7679990510e22b))
+
+### Features
+
+- port deploy and run commands to native TypeScript ([30184e6](https://github.com/salesforcecli/plugin-data-code-extension/commit/30184e69dca5f887cb8c68729553265198885f0e))
+
 ## [1.3.3](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.3.2...1.3.3) (2026-08-05)
 
 ### Bug Fixes
