@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { existsSync, mkdtempSync, rmSync, statSync, readFileSync } from 'node:fs';
-import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { debuglog } from 'node:util';
@@ -144,12 +144,6 @@ function assertBuildFileExists(label: string, filePath: string): void {
       ]
     );
   }
-}
-
-async function copyFile(src: string, dest: string): Promise<void> {
-  const data = new Uint8Array(await readFile(src));
-  const { mode } = await stat(src);
-  await writeFile(dest, data, { mode });
 }
 
 async function copyTree(src: string, dest: string): Promise<void> {
