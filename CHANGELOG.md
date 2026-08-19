@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.4.0...1.4.1) (2026-08-19)
+
+### Bug Fixes
+
+- preserve executable bit in zip dependency staging ([b6e6be3](https://github.com/salesforcecli/plugin-data-code-extension/commit/b6e6be36d45101adf7574beb616f5ab1f171657a))
+- use fs.copyFile to preserve permissions ([75fcca2](https://github.com/salesforcecli/plugin-data-code-extension/commit/75fcca2f4c3f213015df8cb58c98520d83f0847b))
+
 # [1.4.0](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.3.3...1.4.0) (2026-08-18)
 
 ### Bug Fixes
