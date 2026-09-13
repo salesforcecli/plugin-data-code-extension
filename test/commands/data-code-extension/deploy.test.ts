@@ -339,7 +339,7 @@ describe('data-code-extension deploy', () => {
       } catch (error: unknown) {
         expect(error).to.be.instanceOf(Error);
         // The framework may wrap the thrown SfError as a cause on the command error.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
         const cause = (error as any).cause;
         if (cause) {
           expect(cause).to.be.instanceOf(SfError);
