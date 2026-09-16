@@ -270,6 +270,41 @@ describe('nativeDeploy.buildDataTransformBody', () => {
     ]);
   });
 
+  it('emits outputDataObjects (with keyQualifierField rename) for a DLO transform', () => {
+    const config: DataTransformConfig = {
+      entryPoint: 'entrypoint.py',
+      sdkVersion: '1.0.0',
+      dataspace: 'my_space',
+      permissions: { read: { dlo: ['Src__dll'] }, write: { dlo: ['Out__dll'] } },
+      dataObjects: [
+        {
+          name: 'Out__dll',
+          label: 'Out',
+          type: 'Profile',
+          category: 'Profile',
+          fields: [
+            { name: 'id', label: 'Id', dataType: 'Text', isPrimaryKey: true, keyQualifierFieldName: 'kq' },
+            { name: 'val', label: 'Val', dataType: 'Number' },
+          ],
+        },
+      ],
+    };
+    const body = buildDataTransformBody(metadata, config);
+    const definition = body.definition as Record<string, unknown>;
+    expect(definition.outputDataObjects).to.deep.equal([
+      {
+        category: 'Profile',
+        label: 'Out',
+        name: 'Out__dll',
+        type: 'Profile',
+        fields: [
+          { isPrimaryKey: true, label: 'Id', name: 'id', type: 'Text', keyQualifierField: 'kq' },
+          { isPrimaryKey: false, label: 'Val', name: 'val', type: 'Number' },
+        ],
+      },
+    ]);
+  });
+
   it('throws when a DMO transform is missing dataObjects', () => {
     const config: DataTransformConfig = {
       entryPoint: 'entrypoint.py',
@@ -287,6 +322,34 @@ describe('nativeDeploy.getConfig', () => {
     const config = (await getConfig(packageDir, 'script')) as DataTransformConfig;
     expect(config.dataspace).to.equal('my_space');
     expect(config.permissions.read.dlo).to.deep.equal(['Account__dll']);
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('parses the optional dataObjects schema for a DLO write config', async () => {
+    const { dir, packageDir } = await makePackage({
+      packageType: 'script',
+      config: {
+        ...SCRIPT_DLO_CONFIG,
+        dataObjects: [
+          {
+            name: 'Result__dll',
+            label: 'Result',
+            type: 'dataLakeObject',
+            category: 'profile',
+            fields: [
+              { name: 'Id__c', label: 'Id', dataType: 'text', isPrimaryKey: true, keyQualifierFieldName: 'KQ_Id1__c' },
+            ],
+          },
+        ],
+      },
+    });
+    const config = (await getConfig(packageDir, 'script')) as DataTransformConfig;
+    expect(config.dataObjects).to.have.lengthOf(1);
+    const [obj] = config.dataObjects ?? [];
+    expect(obj.name).to.equal('Result__dll');
+    expect(obj.category).to.equal('profile');
+    expect(obj.fields[0].dataType).to.equal('text');
+    expect(obj.fields[0].keyQualifierFieldName).to.equal('KQ_Id1__c');
     await fs.rm(dir, { recursive: true, force: true });
   });
 

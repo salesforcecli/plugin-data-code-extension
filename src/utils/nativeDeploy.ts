@@ -167,7 +167,7 @@ export function sanitizeApiName(name: string): string {
  */
 export function buildMetadata(
   input: { name: string; version: string; description: string; computeType: string; codeType: CodeType },
-  log: (message: string) => void = (): void => {}
+  log: (message: string) => void = (): void => { }
 ): CodeExtensionMetadata {
   const sanitized = sanitizeApiName(input.name);
   if (sanitized !== input.name) {
@@ -368,11 +368,11 @@ export function buildDataTransformBody(
     version: '56.0',
   };
 
-  // outputDataObjects is required only for DMO-backed transforms.
-  if (config.permissions.write.dmo !== undefined) {
-    if (!config.dataObjects || config.dataObjects.length === 0) {
+  if (!config.dataObjects || config.dataObjects.length === 0) {
+    if (config.permissions.write.dmo !== undefined) {
       throw new SfError(messages.getMessage('error.dmoRequiresDataObjects'), 'InvalidConfig');
     }
+  } else {
     definition.outputDataObjects = config.dataObjects.map(dataObjectToOutput);
   }
 
@@ -671,7 +671,7 @@ export async function waitForDeployment(
   onStatus?: (status: string) => void
 ): Promise<string> {
   const start = deps.now();
-  for (;;) {
+  for (; ;) {
     // eslint-disable-next-line no-await-in-loop
     const status = await deps.getDeploymentStatus(name);
     if (deps.now() - start > WAIT_FOR_DEPLOYMENT_TIMEOUT_MS) {
@@ -701,7 +701,7 @@ export class NativeDeployer {
     opts: NativeDeployOptions,
     overrides: Partial<NativeDeployDeps> = {}
   ): Promise<NativeDeployResult> {
-    const log = opts.log ?? ((): void => {});
+    const log = opts.log ?? ((): void => { });
 
     const computeType = COMPUTE_TYPES[opts.cpuSize];
     if (!computeType) {
