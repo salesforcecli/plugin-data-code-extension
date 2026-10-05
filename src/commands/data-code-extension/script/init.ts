@@ -16,12 +16,17 @@
 import { Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { InitBase, type BaseInitFlags } from '../../../base/initBase.js';
+import { SCRIPT_USE_IN_FEATURE_BATCH, SCRIPT_USE_IN_FEATURE_OPTIONS } from '../../../utils/constants.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'init');
 
+export type ScriptInitFlags = BaseInitFlags & {
+  'use-in-feature': string;
+};
+
 // eslint-disable-next-line sf-plugin/only-extend-SfCommand
-export default class Init extends InitBase {
+export default class Init extends InitBase<ScriptInitFlags> {
   public static readonly summary = messages.getMessage('summary', ['script']);
   public static readonly description = messages.getMessage('description');
   public static readonly examples = messages.getMessages('examples', ['script', 'script', 'script']);
@@ -35,6 +40,15 @@ export default class Init extends InitBase {
       required: true,
       exists: false, // Allow non-existing directories (will be created)
     }),
+    // Script-specific invoke option: BatchTransform (default) or StreamingTransform.
+    'use-in-feature': Flags.string({
+      char: 'u',
+      summary: messages.getMessage('flags.useInFeatureScript.summary'),
+      description: messages.getMessage('flags.useInFeatureScript.description'),
+      options: SCRIPT_USE_IN_FEATURE_OPTIONS,
+      default: SCRIPT_USE_IN_FEATURE_BATCH,
+      required: false,
+    }),
   };
 
   // eslint-disable-next-line class-methods-use-this
@@ -47,8 +61,10 @@ export default class Init extends InitBase {
     return messages;
   }
 
-  // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-unused-vars
-  protected getAdditionalFlags(flags: BaseInitFlags): Record<string, unknown> {
-    return {};
+  // eslint-disable-next-line class-methods-use-this
+  protected getAdditionalFlags(flags: ScriptInitFlags): Record<string, unknown> {
+    return {
+      useInFeature: flags['use-in-feature'],
+    };
   }
 }
