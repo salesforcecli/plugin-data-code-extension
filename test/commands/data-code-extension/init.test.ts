@@ -241,4 +241,38 @@ describe('data-code-extension init commands', () => {
       }
     }
   });
+
+  it('script init accepts --use-in-feature StreamingTransform', async () => {
+    // Regression guard: the flag must exist on script init. Before the fix, oclif rejected
+    // this with "Nonexistent flag: --use-in-feature". We allow environment errors (no
+    // Python/package installed) but never a parse-level nonexistent/unexpected-flag error.
+    try {
+      const result = await ScriptInit.run([
+        '--package-dir',
+        './test-streaming',
+        '--use-in-feature',
+        'StreamingTransform',
+      ]);
+      expect(result.codeType).to.equal('script');
+    } catch (error) {
+      expect(error).to.be.instanceOf(Error);
+      const message = (error as Error).message;
+      expect(message).to.not.match(/nonexistent flag/i);
+      expect(message).to.not.match(/unexpected argument/i);
+    }
+  });
+
+  it('script init rejects an invalid --use-in-feature value', async () => {
+    // Deterministic: oclif validates the `options` list during parse, before any
+    // environment check, so this fails the same way regardless of the local toolchain.
+    try {
+      await ScriptInit.run(['--package-dir', './test-bad-feature', '--use-in-feature', 'NotARealFeature']);
+      expect.fail('Should have thrown for an invalid --use-in-feature value');
+    } catch (error) {
+      expect(error).to.be.instanceOf(Error);
+      const message = (error as Error).message;
+      expect(message).to.include('BatchTransform');
+      expect(message).to.include('StreamingTransform');
+    }
+  });
 });
