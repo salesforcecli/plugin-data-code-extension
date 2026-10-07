@@ -1,3 +1,9 @@
+# [1.5.0](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.4.1...1.5.0) (2026-10-07)
+
+### Features
+
+- add --use-in-feature flag to script init (W-24375081) ([d91892e](https://github.com/salesforcecli/plugin-data-code-extension/commit/d91892ec748f3a073722d352287cf9f42f05cbde))
+
 ## [1.4.1](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.4.0...1.4.1) (2026-08-19)
 
 ### Bug Fixes
