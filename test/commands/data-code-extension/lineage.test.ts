@@ -313,7 +313,7 @@ describe('data-code-extension script lineage generate', () => {
     (Org.create as sinon.SinonStub).resolves({
       getUsername: () => undefined,
       getConnection: () => mockConnection,
-    } as unknown as Org);
+    });
     try {
       await LineageGenerate.run(baseArgs());
       expect.fail('Should have thrown');
