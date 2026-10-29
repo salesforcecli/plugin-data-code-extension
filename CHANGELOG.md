@@ -1,3 +1,9 @@
+## [1.6.1](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.6.0...1.6.1) (2026-10-29)
+
+### Bug Fixes
+
+- skip symlink files in zip command ([370e012](https://github.com/salesforcecli/plugin-data-code-extension/commit/370e012db149f09354a4bb6aa20bee98c84a5f1d))
+
 # [1.6.0](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.5.0...1.6.0) (2026-10-16)
 
 ### Bug Fixes
