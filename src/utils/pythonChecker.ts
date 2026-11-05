@@ -103,7 +103,7 @@ export class PythonChecker {
         patch: parseInt(patch, 10),
       };
     } catch (error) {
-      throw new Error(`Python command '${command}' not found or not accessible`);
+      throw new Error(`Python command '${command}' not found or not accessible`, { cause: error });
     }
   }
 

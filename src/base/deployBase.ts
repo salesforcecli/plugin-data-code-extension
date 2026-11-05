@@ -40,7 +40,6 @@ export type DeployResult = SharedResultProps & {
   endpointUrl?: string;
 };
 
-// eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
 export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlags> extends SfCommand<DeployResult> {
   public static enableJsonFlag = false;
 

@@ -63,7 +63,7 @@ describe('data-code-extension script lineage generate', () => {
   }
 
   function warnings(): string[] {
-    return sfCommandStubs.warn.getCalls().map((call) => String(call.args[0]));
+    return sfCommandStubs.warn.getCalls().map((call) => call.args[0] as string);
   }
 
   beforeEach(() => {
@@ -201,7 +201,7 @@ describe('data-code-extension script lineage generate', () => {
     await LineageGenerate.run([...baseArgs(), '--dry-run']);
     const logged = sfCommandStubs.log
       .getCalls()
-      .map((call) => String(call.args[0]))
+      .map((call) => call.args[0] as string)
       .join('\n');
     expect(logged).to.match(/drops:\r?\n {2}- out__dll\.old/);
     expect(logged).to.match(/changes:\r?\n {2}- out__dll\.id__c/);

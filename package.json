@@ -17,9 +17,9 @@
     "@types/mocha": "^10.0.10",
     "@types/node": "^18",
     "@types/sinon": "^10.0.20",
-    "eslint": "^10.4.0",
-    "eslint-config-salesforce-typescript": "^6.0.0",
-    "eslint-plugin-sf-plugin": "^1.18.8",
+    "eslint": "^10.13.0",
+    "eslint-config-salesforce-typescript": "^7.0.0",
+    "eslint-plugin-sf-plugin": "^3.0.4",
     "oclif": "^4.14.0",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.0"
@@ -88,7 +88,8 @@
     "test": "wireit",
     "test:nuts": "nyc mocha \"**/*.nut.ts\" --slow 4500 --timeout 600000 --parallel",
     "test:only": "wireit",
-    "version": "oclif readme"
+    "version": "oclif readme",
+    "test:e2e": "yarn compile && mocha \"test/e2e/**/*.e2e.ts\""
   },
   "publishConfig": {
     "access": "public"
@@ -208,5 +209,9 @@
   "exports": "./lib/index.js",
   "type": "module",
   "author": "cdp-byoc@salesforce.com",
-  "packageManager": "yarn@1.22.22"
+  "packageManager": "yarn@1.22.22",
+  "resolutions": {
+    "serialize-javascript": "^7.0.5",
+    "uuid": "^11.1.1"
+  }
 }
