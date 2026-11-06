@@ -1,0 +1,63 @@
+[
+  {
+    "method": "POST",
+    "path": "/services/data/v63.0/ssot/data-custom-code",
+    "body": {
+      "label": "smoke_script",
+      "name": "smoke_script",
+      "description": "Smoke test script",
+      "version": "1.0.0",
+      "computeType": "CPU_M",
+      "codeType": "script"
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/upload/smoke_script",
+    "zipEntries": ["__pycache__/entrypoint.cpython-311.pyc", "config.json", "entrypoint.py"]
+  },
+  {
+    "method": "GET",
+    "path": "/services/data/v63.0/ssot/data-custom-code/smoke_script"
+  },
+  {
+    "method": "POST",
+    "path": "/services/data/v63.0/ssot/data-transforms",
+    "body": {
+      "definition": {
+        "type": "DCSQL",
+        "manifest": {
+          "nodes": {
+            "node1": {
+              "relation_name": "Smoke_Target__dll",
+              "config": {
+                "materialized": "table"
+              },
+              "compiled_code": ""
+            }
+          },
+          "sources": {
+            "source1": {
+              "relation_name": "Smoke_Source__dll"
+            }
+          },
+          "macros": {
+            "macro.byoc": {
+              "arguments": [
+                {
+                  "name": "smoke_script",
+                  "type": "BYOC_SCRIPT"
+                }
+              ]
+            }
+          }
+        },
+        "version": "56.0"
+      },
+      "label": "smoke_script",
+      "name": "smoke_script",
+      "type": "BATCH",
+      "dataSpaceName": "default"
+    }
+  }
+]

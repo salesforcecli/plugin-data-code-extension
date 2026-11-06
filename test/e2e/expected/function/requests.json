@@ -1,0 +1,31 @@
+[
+  {
+    "method": "POST",
+    "path": "/services/data/v63.0/ssot/data-custom-code",
+    "body": {
+      "label": "smoke_function",
+      "name": "smoke_function",
+      "description": "Smoke test function",
+      "version": "1.0.0",
+      "computeType": "CPU_M",
+      "codeType": "function",
+      "functionInvokeOptions": ["UnstructuredChunking"]
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/upload/smoke_function",
+    "zipEntries": [
+      "__pycache__/entrypoint.cpython-311.pyc",
+      "__pycache__/utility.cpython-311.pyc",
+      "config.json",
+      "entrypoint.py",
+      "tests/test.json",
+      "utility.py"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/services/data/v63.0/ssot/data-custom-code/smoke_function"
+  }
+]
