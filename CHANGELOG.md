@@ -1,3 +1,10 @@
+## [1.6.2](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.6.1...1.6.2) (2026-11-06)
+
+### Bug Fixes
+
+- dependency bumps everywhere ([34513a5](https://github.com/salesforcecli/plugin-data-code-extension/commit/34513a52a5db557bb140c260017a97352b3b432a))
+- node floor bumped ([1493de5](https://github.com/salesforcecli/plugin-data-code-extension/commit/1493de5adc594cdf858a0f95834af034756941d5))
+
 ## [1.6.1](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.6.0...1.6.1) (2026-10-29)
 
 ### Bug Fixes
