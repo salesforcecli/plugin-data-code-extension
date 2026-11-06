@@ -33,7 +33,6 @@ export type RunResult = SharedResultProps & {
   output?: string;
 };
 
-// eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
 export abstract class RunBase extends SfCommand<RunResult> {
   public static enableJsonFlag = false;
 

@@ -12,14 +12,21 @@
   "devDependencies": {
     "@oclif/plugin-command-snapshot": "^5.2.3",
     "@salesforce/cli-plugins-testkit": "^5.3.20",
-    "@salesforce/dev-scripts": "^11.0.4",
-    "eslint-plugin-sf-plugin": "^1.18.8",
+    "@salesforce/dev-scripts": "^15.0.0",
+    "@types/chai": "^4.3.17",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22",
+    "@types/sinon": "^10.0.20",
+    "c8": "^10",
+    "eslint": "^10.13.0",
+    "eslint-config-salesforce-typescript": "^7.0.0",
+    "eslint-plugin-sf-plugin": "^3.0.4",
     "oclif": "^4.14.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.4"
+    "typescript": "^6.0.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.19.0"
   },
   "repository": "salesforcecli/plugin-data-code-extension",
   "files": [
@@ -80,6 +87,7 @@
     "prepack": "sf-prepack",
     "prepare": "sf-install",
     "test": "wireit",
+    "test:e2e": "yarn compile && mocha \"test/e2e/**/*.e2e.ts\"",
     "test:nuts": "nyc mocha \"**/*.nut.ts\" --slow 4500 --timeout 600000 --parallel",
     "test:only": "wireit",
     "version": "oclif readme"
@@ -124,6 +132,7 @@
         "src/**/*.ts",
         "test/**/*.ts",
         "messages/**",
+        "**/eslint.config.*",
         "**/.eslint*",
         "**/tsconfig.json"
       ],
@@ -145,7 +154,7 @@
       ]
     },
     "test:only": {
-      "command": "nyc mocha \"test/**/*.test.ts\"",
+      "command": "c8 mocha \"test/**/*.test.ts\"",
       "env": {
         "FORCE_COLOR": "2"
       },
@@ -155,7 +164,7 @@
         "**/tsconfig.json",
         ".mocha*",
         "!*.nut.ts",
-        ".nycrc"
+        ".c8rc.json"
       ],
       "output": []
     },
@@ -201,5 +210,9 @@
   "exports": "./lib/index.js",
   "type": "module",
   "author": "cdp-byoc@salesforce.com",
-  "packageManager": "yarn@1.22.22"
+  "packageManager": "yarn@1.22.22",
+  "resolutions": {
+    "serialize-javascript": "^7.0.5",
+    "uuid": "^11.1.1"
+  }
 }

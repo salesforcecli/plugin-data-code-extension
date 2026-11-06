@@ -68,7 +68,6 @@ const PROJECT_CONFIG_YAML = 'config.yaml';
 /** Base-directory files `deploy` packages alongside payload/ (see zipBuilder). */
 const PACKAGED_BUILD_FILES = ['requirements.txt', 'build_native_dependencies.sh', 'Dockerfile.dependencies'];
 
-// eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
 export abstract class LineageBase extends SfCommand<LineageGenerateResult> {
   public static enableJsonFlag = true;
 
@@ -358,8 +357,7 @@ async function isPackageInput(file: string, dirs: string[], files: string[]): Pr
     realDirs.some((dir) => within(target, dir)) ||
     files.some((input) => sameFile(input, file)) ||
     realFiles.some((input) => sameFile(input, target)) ||
-    (targetStat !== undefined &&
-      fileStats.some((stat) => stat !== undefined && stat.dev === targetStat.dev && stat.ino === targetStat.ino))
+    (targetStat !== undefined && fileStats.some((stat) => stat?.dev === targetStat.dev && stat.ino === targetStat.ino))
   );
 }
 

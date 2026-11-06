@@ -27,7 +27,6 @@ export type InitResult = SharedResultProps & {
   executionResult?: NativeInitResult;
 };
 
-// eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
 export abstract class InitBase<TFlags extends BaseInitFlags = BaseInitFlags> extends SfCommand<InitResult> {
   public static enableJsonFlag = false;
 

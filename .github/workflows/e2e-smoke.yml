@@ -1,0 +1,56 @@
+name: e2e-smoke
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: smoke (${{ matrix.os }}, node ${{ matrix.node }}, sdk ${{ matrix.sdk }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: ['lts/*']
+        # Oldest supported SDK release, and whatever is newest on PyPI.
+        sdk: ['7.0.0', 'latest']
+        include:
+          # Minimum Node version from package.json `engines`.
+          - os: ubuntu-latest
+            node: '22.19.0'
+            sdk: '7.0.0'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: yarn
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python SDK
+        shell: bash
+        env:
+          SDK_VERSION: ${{ matrix.sdk }}
+        run: |
+          if [ "$SDK_VERSION" = "latest" ]; then
+            python -m pip install --upgrade salesforce-data-customcode
+          else
+            python -m pip install "salesforce-data-customcode==$SDK_VERSION"
+          fi
+          # `scan` shells out to pipreqs, which the SDK does not install.
+          python -m pip install pipreqs
+          python -m pip show salesforce-data-customcode
+
+      - run: yarn install --frozen-lockfile
+
+      - run: yarn test:e2e

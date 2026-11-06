@@ -41,7 +41,6 @@ export type ScanResult = {
   executionResult: NativeScanResult;
 } & EnvironmentCheckResult;
 
-// eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
 export abstract class ScanBase extends SfCommand<ScanResult> {
   public static enableJsonFlag = false;
 

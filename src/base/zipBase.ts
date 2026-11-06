@@ -44,7 +44,6 @@ function formatBytes(bytes: number): string {
   return `${value.toFixed(unit === 0 ? 0 : 2)} ${units[unit]}`;
 }
 
-// eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
 export abstract class ZipBase extends SfCommand<ZipResult> {
   public static enableJsonFlag = false;
 

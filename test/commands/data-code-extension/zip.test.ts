@@ -13,183 +13,94 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import * as path from 'node:path';
 import { TestContext } from '@salesforce/core/testSetup';
 import { expect } from 'chai';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
 import ScriptZip from '../../../src/commands/data-code-extension/script/zip.js';
 import FunctionZip from '../../../src/commands/data-code-extension/function/zip.js';
+import { type ZipResult } from '../../../src/base/zipBase.js';
+
+/**
+ * Write a minimal initialized package (no requirements.txt, so zip skips the
+ * Docker dependency build) and return its payload directory.
+ */
+function writePackage(root: string, type: 'script' | 'function'): string {
+  const sdkDir = path.join(root, '.datacustomcode_proj');
+  const payload = path.join(root, 'payload');
+  mkdirSync(sdkDir, { recursive: true });
+  mkdirSync(payload, { recursive: true });
+  writeFileSync(path.join(sdkDir, 'sdk_config.json'), JSON.stringify({ type }));
+  writeFileSync(path.join(payload, 'entrypoint.py'), 'print("hello")\n');
+  writeFileSync(path.join(payload, 'config.json'), JSON.stringify({ entryPoint: 'entrypoint.py' }));
+  return payload;
+}
 
 describe('data-code-extension zip commands', () => {
   const $$ = new TestContext();
   let sfCommandStubs: ReturnType<typeof stubSfCommandUx>;
+  let tempDir: string;
+  let originalCwd: string;
 
   beforeEach(() => {
     sfCommandStubs = stubSfCommandUx($$.SANDBOX);
+    tempDir = mkdtempSync(path.join(tmpdir(), 'zip-command-'));
+    // deployment.zip is written to the current directory.
+    originalCwd = process.cwd();
+    process.chdir(tempDir);
   });
 
   afterEach(() => {
+    process.chdir(originalCwd);
+    rmSync(tempDir, { recursive: true, force: true });
     $$.restore();
   });
 
-  it('runs script zip command successfully', async () => {
-    try {
-      const result = await ScriptZip.run(['--package-dir', './test-package']);
+  for (const type of ['script', 'function'] as const) {
+    const run = async (argv: string[]): Promise<ZipResult> =>
+      type === 'script' ? ScriptZip.run(argv) : FunctionZip.run(argv);
 
-      // The TS port no longer shells out to Python, so success no longer depends
-      // on Python/pip/binary checks. Just verify the structured result fields.
-      expect(result.success).to.be.true;
-      expect(result.codeType).to.equal('script');
-      expect(result.packageDir).to.equal('./test-package');
+    it(`zips a ${type} payload`, async () => {
+      const payload = writePackage(path.join(tempDir, 'pkg'), type);
 
-      if (result.archivePath) {
-        expect(result.archivePath).to.be.a('string');
+      const result = await run(['--package-dir', payload]);
+
+      expect(result).to.deep.include({
+        success: true,
+        codeType: type,
+        packageDir: payload,
+        archivePath: 'deployment.zip',
+        fileCount: 2,
+      });
+      expect(result.archiveSizeBytes).to.be.greaterThan(0);
+      expect(result.message).to.be.a('string').that.is.not.empty;
+      expect(existsSync(path.join(tempDir, 'deployment.zip'))).to.equal(true);
+
+      const logged = sfCommandStubs.log.args.flat().join('\n');
+      expect(logged).to.include('deployment.zip');
+      expect(logged).to.match(/\d+(\.\d+)? (B|KB)/);
+    });
+
+    it(`accepts --network for a ${type} payload`, async () => {
+      const payload = writePackage(path.join(tempDir, 'pkg'), type);
+
+      const result = await run(['--package-dir', payload, '--network', 'host']);
+
+      expect(result.success).to.equal(true);
+      expect(result.codeType).to.equal(type);
+    });
+
+    it(`fails with PackageDirNotFound for a missing ${type} directory`, async () => {
+      const missing = path.join(tempDir, 'does-not-exist');
+      try {
+        await run(['--package-dir', missing]);
+        expect.fail('expected zip to throw');
+      } catch (error) {
+        expect(error).to.have.property('name', 'PackageDirNotFound');
+        expect((error as { actions?: string[] }).actions).to.be.an('array').that.is.not.empty;
       }
-      if (result.fileCount !== undefined) {
-        expect(result.fileCount).to.be.a('number');
-      }
-      if (result.archiveSizeBytes !== undefined) {
-        expect(result.archiveSizeBytes).to.be.a('number');
-      }
-
-      expect(result.message).to.be.a('string');
-      expect(result.message.length).to.be.greaterThan(0);
-
-      // Verify that logging was called
-      expect(sfCommandStubs.log.called).to.be.true;
-    } catch (error) {
-      // If Python 3.11+ is not installed, pip package is missing, binary is not found, or zip fails, verify the error is handled correctly
-      expect(error).to.have.property('name');
-      if (error instanceof Error) {
-        // Check for various error types including generic Error from missing directory
-        expect(error.name).to.be.oneOf([
-          'Error',
-          'PythonNotFound',
-          'PythonVersionMismatch',
-          'PipNotFound',
-          'PackageNotInstalled',
-          'BinaryNotFound',
-          'BinaryNotExecutable',
-          'ZipPermissionDenied',
-          'PackageDirNotFound',
-          'NotInitializedPackage',
-          'InsufficientDiskSpace',
-          'ZipExecutionFailed',
-        ]);
-        expect(error.message).to.be.a('string');
-        if ('actions' in error && error.actions) {
-          expect(error.actions).to.be.an('array');
-        }
-      }
-    }
-  });
-
-  it('runs script zip command with network flag', async () => {
-    try {
-      const result = await ScriptZip.run(['--package-dir', './test-package', '--network', 'host']);
-
-      if (result.success) {
-        expect(result.codeType).to.equal('script');
-        expect(result.packageDir).to.equal('./test-package');
-      }
-    } catch (error) {
-      // Handle errors gracefully
-      expect(error).to.have.property('name');
-    }
-  });
-
-  it('returns structured result for script zip', async () => {
-    try {
-      const result = await ScriptZip.run(['--package-dir', './test-json']);
-
-      // Should return a structured result
-      expect(result).to.be.an('object');
-      expect(result).to.have.property('success');
-      expect(result).to.have.property('message');
-      expect(result).to.have.property('packageDir');
-      // archivePath may or may not be present depending on whether zip succeeded
-    } catch (error) {
-      expect(error).to.have.property('name');
-      if (error instanceof Error) {
-        expect(error.name).to.be.a('string');
-        expect(error.message).to.be.a('string');
-      }
-    }
-  });
-
-  it('runs function zip command successfully', async () => {
-    try {
-      const result = await FunctionZip.run(['--package-dir', './test-function']);
-
-      expect(result.success).to.be.true;
-      expect(result.codeType).to.equal('function');
-      expect(result.packageDir).to.equal('./test-function');
-
-      if (result.archivePath) {
-        expect(result.archivePath).to.be.a('string');
-      }
-      if (result.fileCount !== undefined) {
-        expect(result.fileCount).to.be.a('number');
-      }
-      if (result.archiveSizeBytes !== undefined) {
-        expect(result.archiveSizeBytes).to.be.a('number');
-      }
-
-      expect(result.message).to.be.a('string');
-      expect(result.message.length).to.be.greaterThan(0);
-
-      // Verify that logging was called
-      expect(sfCommandStubs.log.called).to.be.true;
-    } catch (error) {
-      // Handle errors gracefully
-      expect(error).to.have.property('name');
-      if (error instanceof Error) {
-        expect(error.name).to.be.oneOf([
-          'PythonNotFound',
-          'PythonVersionMismatch',
-          'PipNotFound',
-          'PackageNotInstalled',
-          'BinaryNotFound',
-          'BinaryNotExecutable',
-          'ZipPermissionDenied',
-          'PackageDirNotFound',
-          'NotInitializedPackage',
-          'InsufficientDiskSpace',
-          'ZipExecutionFailed',
-        ]);
-        expect(error.message).to.be.a('string');
-      }
-    }
-  });
-
-  it('runs function zip command with network flag', async () => {
-    try {
-      const result = await FunctionZip.run(['--package-dir', './test-function', '--network', 'bridge']);
-
-      if (result.success) {
-        expect(result.codeType).to.equal('function');
-        expect(result.packageDir).to.equal('./test-function');
-      }
-    } catch (error) {
-      // Handle errors gracefully
-      expect(error).to.have.property('name');
-    }
-  });
-
-  it('returns structured result for function zip', async () => {
-    try {
-      const result = await FunctionZip.run(['--package-dir', './test-function-json']);
-
-      // Should return a structured result
-      expect(result).to.be.an('object');
-      expect(result).to.have.property('success');
-      expect(result).to.have.property('message');
-      expect(result).to.have.property('packageDir');
-    } catch (error) {
-      expect(error).to.have.property('name');
-      if (error instanceof Error) {
-        expect(error.name).to.be.a('string');
-        expect(error.message).to.be.a('string');
-      }
-    }
-  });
+    });
+  }
 });

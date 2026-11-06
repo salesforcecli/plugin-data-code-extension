@@ -174,7 +174,7 @@ describe('PipChecker', () => {
           expect(['pip', 'pip3', 'python', 'python3']).to.include(result.pipCommand);
           foundPackage = true;
           break;
-        } catch (error) {
+        } catch {
           // Continue trying other packages
           continue;
         }

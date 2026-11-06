@@ -1,0 +1,13 @@
+{
+  "sdkVersion": "<sdk-version>",
+  "entryPoint": "entrypoint.py",
+  "dataspace": "default",
+  "permissions": {
+    "read": {
+      "dlo": ["Smoke_Source__dll"]
+    },
+    "write": {
+      "dlo": ["Smoke_Target__dll"]
+    }
+  }
+}

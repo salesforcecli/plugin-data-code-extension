@@ -271,7 +271,7 @@ describe('data-code-extension scan commands', () => {
     const configFile = (): string => path.join(testDir, 'payload', 'config.json');
     const readConfig = (): Record<string, unknown> =>
       JSON.parse(fs.readFileSync(configFile(), 'utf8')) as Record<string, unknown>;
-    const warnings = (): string[] => sfCommandStubs.warn.getCalls().map((call) => String(call.args[0]));
+    const warnings = (): string[] => sfCommandStubs.warn.getCalls().map((call) => call.args[0] as string);
 
     beforeEach(() => {
       confirmStub = $$.SANDBOX.stub(SfCommand.prototype, 'confirm').resolves(true);
