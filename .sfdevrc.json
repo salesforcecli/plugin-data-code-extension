@@ -5,6 +5,14 @@
   "wireit": {
     "test": {
       "dependencies": ["test:compile", "test:only", "lint"]
+    },
+    "test:only": {
+      "command": "c8 mocha \"test/**/*.test.ts\"",
+      "env": {
+        "FORCE_COLOR": "2"
+      },
+      "files": ["test/**/*.ts", "src/**/*.ts", "**/tsconfig.json", ".mocha*", "!*.nut.ts", ".c8rc.json"],
+      "output": []
     }
   }
 }

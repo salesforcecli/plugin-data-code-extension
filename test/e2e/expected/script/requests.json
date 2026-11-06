@@ -14,7 +14,7 @@
   {
     "method": "PUT",
     "path": "/upload/smoke_script",
-    "zipEntries": ["__pycache__/entrypoint.cpython-311.pyc", "config.json", "entrypoint.py"]
+    "zipEntries": ["config.json", "entrypoint.py"]
   },
   {
     "method": "GET",

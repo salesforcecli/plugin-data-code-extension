@@ -43,6 +43,18 @@ const CUSTOM_CODE_PATH = /^\/services\/data\/v\d+\.\d+\/ssot\/data-custom-code(?
 const DATA_TRANSFORMS_PATH = /^\/services\/data\/v\d+\.\d+\/ssot\/data-transforms$/;
 const UPLOAD_PATH = /^\/upload\/([^/?]+)$/;
 
+/**
+ * Sorted file entries of a zip, without Python bytecode. Whether `.pyc` files
+ * exist depends on how the SDK was installed (pip compiles them by default),
+ * so they are left out to keep the expected files portable.
+ */
+export async function listZipEntries(data: Buffer): Promise<string[]> {
+  const zip = await JSZip.loadAsync(data);
+  return Object.keys(zip.files)
+    .filter((name) => !zip.files[name].dir && !name.split('/').includes('__pycache__') && !name.endsWith('.pyc'))
+    .sort();
+}
+
 function readBody(req: IncomingMessage): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
@@ -101,11 +113,7 @@ export async function startMockDataCloud(tls: { key: Buffer; cert: Buffer }): Pr
   let baseUrl = '';
 
   const handleUpload = async (method: string, urlPath: string, raw: Buffer, res: ServerResponse): Promise<void> => {
-    const zip = await JSZip.loadAsync(raw);
-    const zipEntries = Object.keys(zip.files)
-      .filter((name) => !zip.files[name].dir)
-      .sort();
-    requests.push({ method, path: urlPath, zipEntries });
+    requests.push({ method, path: urlPath, zipEntries: await listZipEntries(raw) });
     res.writeHead(200);
     res.end();
   };

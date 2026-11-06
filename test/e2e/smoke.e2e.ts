@@ -41,8 +41,7 @@ import { homedir, tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect } from 'chai';
-import JSZip from 'jszip';
-import { startMockDataCloud, type MockDataCloud, type RecordedRequest } from './mockDataCloud.js';
+import { listZipEntries, startMockDataCloud, type MockDataCloud, type RecordedRequest } from './mockDataCloud.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..');
@@ -123,11 +122,15 @@ function readLines(file: string): string[] {
     .filter((l) => l.length > 0);
 }
 
-async function zipEntries(file: string): Promise<string[]> {
-  const zip = await JSZip.loadAsync(readFileSync(file));
-  return Object.keys(zip.files)
-    .filter((n) => !zip.files[n].dir)
-    .sort();
+function zipEntries(file: string): Promise<string[]> {
+  return listZipEntries(readFileSync(file));
+}
+
+/** Parse the JSON block `function run` prints between its `RESULT:` banners. */
+function parseRunResult(stdout: string): unknown {
+  const match = /RESULT:\s*\n=+\s*\n([\s\S]*?)\n=+/.exec(stdout);
+  if (!match) throw new Error(`no RESULT block in output:\n${stdout}`);
+  return JSON.parse(match[1]) as unknown;
 }
 
 function requestsSince(start: number): RecordedRequest[] {
@@ -352,7 +355,16 @@ describe('e2e smoke', function () {
         ],
         cwd
       );
-      expect(result.stdout).to.include('RESULT:');
+      // The chunk text comes from the SDK's template and sample input, so check
+      // the response shape rather than exact content.
+      const { output } = parseRunResult(result.stdout) as {
+        output: Array<{ text: string; seq_no: number }>;
+      };
+      expect(output, 'function returned no chunks').to.be.an('array').that.is.not.empty;
+      output.forEach((chunk, i) => {
+        expect(chunk.text, `chunk ${i + 1} text`).to.be.a('string').that.is.not.empty;
+        expect(chunk.seq_no, `chunk ${i + 1} seq_no`).to.equal(i + 1);
+      });
     });
 
     it('zip packages the payload', async () => {

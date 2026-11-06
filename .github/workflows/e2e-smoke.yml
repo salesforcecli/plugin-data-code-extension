@@ -10,21 +10,27 @@ permissions:
 
 jobs:
   smoke:
-    name: smoke (${{ matrix.os }}, sdk ${{ matrix.sdk }})
+    name: smoke (${{ matrix.os }}, node ${{ matrix.node }}, sdk ${{ matrix.sdk }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
+        node: ['lts/*']
         # Oldest supported SDK release, and whatever is newest on PyPI.
         sdk: ['7.0.0', 'latest']
+        include:
+          # Minimum Node version from package.json `engines`.
+          - os: ubuntu-latest
+            node: '22.19.0'
+            sdk: '7.0.0'
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: ${{ matrix.node }}
           cache: yarn
 
       - uses: actions/setup-python@v5
