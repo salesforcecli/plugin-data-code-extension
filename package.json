@@ -15,7 +15,7 @@
     "@salesforce/dev-scripts": "^15.0.0",
     "@types/chai": "^4.3.17",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^18",
+    "@types/node": "^22",
     "@types/sinon": "^10.0.20",
     "c8": "^10",
     "eslint": "^10.13.0",
@@ -26,7 +26,7 @@
     "typescript": "^6.0.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.19.0"
   },
   "repository": "salesforcecli/plugin-data-code-extension",
   "files": [
@@ -87,10 +87,10 @@
     "prepack": "sf-prepack",
     "prepare": "sf-install",
     "test": "wireit",
+    "test:e2e": "yarn compile && mocha \"test/e2e/**/*.e2e.ts\"",
     "test:nuts": "nyc mocha \"**/*.nut.ts\" --slow 4500 --timeout 600000 --parallel",
     "test:only": "wireit",
-    "version": "oclif readme",
-    "test:e2e": "yarn compile && mocha \"test/e2e/**/*.e2e.ts\""
+    "version": "oclif readme"
   },
   "publishConfig": {
     "access": "public"
@@ -164,7 +164,6 @@
         "**/tsconfig.json",
         ".mocha*",
         "!*.nut.ts",
-        ".nycrc",
         ".c8rc.json"
       ],
       "output": []

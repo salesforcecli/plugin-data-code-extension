@@ -1634,7 +1634,7 @@
   dependencies:
     undici-types "~5.26.4"
 
-"@types/node@^22.5.5":
+"@types/node@^22", "@types/node@^22.5.5":
   version "22.20.5"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-22.20.5.tgz#afa7bde6da81b8b83ea4e2f020487e9b148c11fd"
   integrity sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==
