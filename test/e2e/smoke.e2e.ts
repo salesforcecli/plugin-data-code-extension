@@ -41,6 +41,7 @@ import { homedir, tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect } from 'chai';
+import { parse as parseYaml } from 'yaml';
 import { listZipEntries, startMockDataCloud, type MockDataCloud, type RecordedRequest } from './mockDataCloud.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -307,6 +308,94 @@ describe('e2e smoke', function () {
         cwd
       );
       expectMatches('script/requests.json', requestsSince(start));
+    });
+  });
+
+  describe('streaming script', () => {
+    let cwd: string;
+    let pkg: string;
+    const configPath = (): string => path.join(pkg, 'payload', 'config.json');
+
+    before(() => {
+      cwd = path.join(workDir, 'streaming');
+      pkg = path.join(cwd, 'pkg');
+      mkdirSync(cwd);
+    });
+
+    it('init scaffolds a StreamingTransform package', async () => {
+      const result = await runOk(
+        ['data-code-extension', 'script', 'init', '--package-dir', pkg, '--use-in-feature', 'StreamingTransform'],
+        cwd
+      );
+      expect(result.stderr).to.include('streamingSource.name');
+
+      // The entrypoint and its write target come from the SDK's streaming example, so
+      // check the shape rather than exact content.
+      const config = readJson(configPath()) as {
+        streamingSource: unknown;
+        permissions: { read: unknown; write: { dlo: string[] } };
+      };
+      expect(config.streamingSource).to.deep.equal({ type: 'dlo', name: '' });
+      expect(config.permissions.read).to.deep.equal({ dlo: [] });
+      expect(config.permissions.write.dlo).to.be.an('array').that.is.not.empty;
+
+      const runConfig = parseYaml(readFileSync(path.join(pkg, 'config.yaml'), 'utf8')) as Record<
+        string,
+        { ['type_config_name']: string }
+      >;
+      expect(runConfig.reader_config.type_config_name).to.equal('LocalDeltasReader');
+      expect(runConfig.writer_config.type_config_name).to.equal('LocalDeltasWriter');
+    });
+
+    it('scan keeps streamingSource.name and writes delta permissions', async () => {
+      copyFileSync(path.join(FIXTURES_DIR, 'streaming', 'entrypoint.py'), path.join(pkg, 'payload', 'entrypoint.py'));
+      const config = readJson(configPath()) as Record<string, unknown>;
+      writeFileSync(
+        configPath(),
+        JSON.stringify({ ...config, streamingSource: { type: 'dlo', name: 'Smoke_Stream_Source__dll' } }, null, 2)
+      );
+
+      const result = await runOk(
+        [
+          'data-code-extension',
+          'script',
+          'scan',
+          '--entrypoint',
+          path.join(pkg, 'payload', 'entrypoint.py'),
+          '--no-prompt',
+        ],
+        cwd
+      );
+      expect(result.stderr).to.not.include('streamingSource.name is empty');
+      expectMatches('streaming/config.json', readJson(configPath()));
+    });
+
+    it('zip packages the payload', async () => {
+      await runOk(['data-code-extension', 'script', 'zip', '--package-dir', path.join(pkg, 'payload')], cwd);
+      expectMatches('streaming/zip-entries.json', await zipEntries(path.join(cwd, 'deployment.zip')));
+    });
+
+    it('deploy creates a streaming deployment and a STREAMING transform', async () => {
+      const start = mock.requests.length;
+      await runOk(
+        [
+          'data-code-extension',
+          'script',
+          'deploy',
+          '--name',
+          'smoke_streaming',
+          '--package-version',
+          '1.0.0',
+          '--description',
+          'Smoke test streaming script',
+          '--package-dir',
+          path.join(pkg, 'payload'),
+          '--target-org',
+          USERNAME,
+        ],
+        cwd
+      );
+      expectMatches('streaming/requests.json', requestsSince(start));
     });
   });
 

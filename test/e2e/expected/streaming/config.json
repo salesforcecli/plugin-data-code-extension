@@ -1,0 +1,17 @@
+{
+  "sdkVersion": "<sdk-version>",
+  "entryPoint": "entrypoint.py",
+  "dataspace": "default",
+  "streamingSource": {
+    "type": "dlo",
+    "name": "Smoke_Stream_Source__dll"
+  },
+  "permissions": {
+    "read": {
+      "dlo": ["Smoke_Stream_Source__dll"]
+    },
+    "write": {
+      "dlo": ["Smoke_Stream_Target__dll"]
+    }
+  }
+}

@@ -6,6 +6,8 @@ Scan the Data Code Extension %s package for permissions and dependencies.
 
 Scans Python files in an initialized Data Code Extension package directory to identify required permissions and dependencies. Updates the config.json and requirements.txt files based on the code analysis.
 
+For a script that calls the streaming delta methods (read_dlo_deltas or read_dmo_deltas, and write_dlo_deltas or write_dmo_deltas), scan writes a streaming config instead. The read source can't be detected from the code, so scan keeps streamingSource.name from config.json and uses it as the only read permission. Write permissions come from the delta writes.
+
 # examples.script
 
 - Scan with a custom entrypoint file:
@@ -114,6 +116,10 @@ Skips the confirmation scan asks for when the rebuilt permissions no longer cove
 
 dataLineage references objects that are no longer in permissions (%s entries affected). The package will fail to deploy (1041/1042) until you rerun 'data-code-extension script lineage generate' or edit dataLineage. Scan doesn't change dataLineage.
 %s
+
+# warning.streamingSourceNameEmpty
+
+streamingSource.name is empty in config.json. A streaming transform must declare its read source; set streamingSource.name to the DLO or DMO the transform reads from, then scan again.
 
 # prompt.staleLineage
 

@@ -19,6 +19,7 @@ import path from 'node:path';
 import { debuglog } from 'node:util';
 import { Messages, SfError, type Connection } from '@salesforce/core';
 import { decodeHTML } from 'entities';
+import { SCRIPT_USE_IN_FEATURE_STREAMING } from './constants.js';
 import { findBaseDirectory, getPackageType, type CodeType } from './nativeScan.js';
 import { zipWithSfError, ZIP_FILE_NAME, type ZipResult } from './zipBuilder.js';
 
@@ -27,9 +28,11 @@ const debug = debuglog('datacustomcode');
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'deploy');
 
-// Mirror of the Data Cloud REST paths in `datacustomcode/deploy.py`. Kept at
-// v63.0 to match the SDK's `main` branch (streaming / v67.0 is out of scope).
+// Mirror of the Data Cloud REST paths in `datacustomcode/deploy.py`.
 const DATA_CUSTOM_CODE_PATH = 'services/data/v63.0/ssot/data-custom-code';
+// `invokeOptions` only binds at v67.0, so deployment creation routes there when
+// it is set (streaming scripts). Everything else, including status polling, stays on v63.0.
+const DATA_CUSTOM_CODE_INVOKE_OPTIONS_PATH = 'services/data/v67.0/ssot/data-custom-code';
 const DATA_TRANSFORMS_PATH = 'services/data/v63.0/ssot/data-transforms';
 // Python waits up to 3000 *seconds* (`WAIT_FOR_DEPLOYMENT_TIMEOUT`), polling once a second.
 const WAIT_FOR_DEPLOYMENT_TIMEOUT_MS = 3000 * 1000;
@@ -73,6 +76,7 @@ export type CodeExtensionMetadata = {
   computeType: string;
   codeType: CodeType;
   functionInvokeOptions?: string[];
+  invokeOptions?: string[];
 };
 
 export type CreateDeploymentResponse = {
@@ -103,7 +107,11 @@ export type DataTransformConfig = {
   dataspace: string;
   permissions: { read: Permission; write: Permission };
   dataObjects?: DataObject[];
+  /** Present only for streaming transforms; its presence makes the transform STREAMING. */
+  streamingSource?: StreamingSource;
 };
+
+export type StreamingSource = { type: string; name: string };
 
 export type FunctionConfig = {
   entryPoint: string;
@@ -167,7 +175,7 @@ export function sanitizeApiName(name: string): string {
  */
 export function buildMetadata(
   input: { name: string; version: string; description: string; computeType: string; codeType: CodeType },
-  log: (message: string) => void = (): void => { }
+  log: (message: string) => void = (): void => {}
 ): CodeExtensionMetadata {
   const sanitized = sanitizeApiName(input.name);
   if (sanitized !== input.name) {
@@ -380,7 +388,7 @@ export function buildDataTransformBody(
     definition,
     label: metadata.name,
     name: metadata.name,
-    type: 'BATCH',
+    type: config.streamingSource ? 'STREAMING' : 'BATCH',
     dataSpaceName: config.dataspace,
   };
 }
@@ -458,7 +466,23 @@ function validateDataTransformConfig(parsed: unknown, configPath: string): DataT
     dataspace: String(parsed.dataspace),
     permissions: { read, write },
     dataObjects: parsed.dataObjects as DataObject[] | undefined,
+    ...parseStreamingSource(parsed.streamingSource, configPath),
   };
+}
+
+/** Mirror of `StreamingSource` in `datacustomcode/deploy.py`: optional, but when present needs string `type`/`name`. */
+function parseStreamingSource(value: unknown, configPath: string): { streamingSource?: StreamingSource } {
+  if (value === undefined || value === null) return {};
+  if (!isRecord(value) || typeof value.type !== 'string' || typeof value.name !== 'string') {
+    throw new SfError(
+      messages.getMessage('error.configInvalid', [
+        configPath,
+        "streamingSource must be an object with string 'type' and 'name'",
+      ]),
+      'InvalidConfig'
+    );
+  }
+  return { streamingSource: { type: value.type, name: value.name } };
 }
 
 function validateFunctionConfig(parsed: unknown, configPath: string): FunctionConfig {
@@ -610,10 +634,19 @@ function defaultCreateDeployment(connection: Connection): NativeDeployDeps['crea
     if (metadata.functionInvokeOptions && metadata.functionInvokeOptions.length > 0) {
       body.functionInvokeOptions = metadata.functionInvokeOptions;
     }
+    const hasInvokeOptions = metadata.invokeOptions !== undefined && metadata.invokeOptions.length > 0;
+    if (hasInvokeOptions) {
+      body.invokeOptions = metadata.invokeOptions;
+    }
 
     let response: CreateDeploymentResponse;
     try {
-      response = await requestJson<CreateDeploymentResponse>(connection, 'POST', DATA_CUSTOM_CODE_PATH, body);
+      response = await requestJson<CreateDeploymentResponse>(
+        connection,
+        'POST',
+        hasInvokeOptions ? DATA_CUSTOM_CODE_INVOKE_OPTIONS_PATH : DATA_CUSTOM_CODE_PATH,
+        body
+      );
     } catch (err) {
       if (isConflictError(err)) {
         throw new SfError(messages.getMessage('error.deploymentExists', [metadata.name]), 'DeploymentExists');
@@ -671,7 +704,7 @@ export async function waitForDeployment(
   onStatus?: (status: string) => void
 ): Promise<string> {
   const start = deps.now();
-  for (; ;) {
+  for (;;) {
     // eslint-disable-next-line no-await-in-loop
     const status = await deps.getDeploymentStatus(name);
     if (deps.now() - start > WAIT_FOR_DEPLOYMENT_TIMEOUT_MS) {
@@ -701,7 +734,7 @@ export class NativeDeployer {
     opts: NativeDeployOptions,
     overrides: Partial<NativeDeployDeps> = {}
   ): Promise<NativeDeployResult> {
-    const log = opts.log ?? ((): void => { });
+    const log = opts.log ?? ((): void => {});
 
     const computeType = COMPUTE_TYPES[opts.cpuSize];
     if (!computeType) {
@@ -737,6 +770,11 @@ export class NativeDeployer {
 
     // Validate config.json up front so a bad package fails before any API call.
     const config = await getConfig(opts.packageDir, packageType);
+
+    // Mirror of `deploy_full`: a config with `streamingSource` deploys as a streaming transform.
+    if (packageType === 'script' && (config as DataTransformConfig).streamingSource && !metadata.invokeOptions) {
+      metadata.invokeOptions = [SCRIPT_USE_IN_FEATURE_STREAMING];
+    }
 
     const deps = buildDefaultDeps(opts.connection, overrides);
 

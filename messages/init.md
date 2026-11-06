@@ -83,3 +83,9 @@ Invoke option for the script package (script packages only).
 # flags.useInFeatureScript.description
 
 Which transform feature this script is used in: BatchTransform (a bounded, batch data transform; the default) or StreamingTransform (a streaming data transform over a DLO/DMO change feed). Defaults to BatchTransform.
+
+StreamingTransform starts from the SDK's streaming example entrypoint, adds an empty streamingSource to config.json, and writes a config.yaml that switches 'run' to the local delta reader and writer. Requires salesforce-data-customcode 7.0.0 or later.
+
+# warning.streamingSourceNameEmpty
+
+Set streamingSource.name in %s to the DLO or DMO the streaming transform reads from, then run 'data-code-extension script scan'.

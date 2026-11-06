@@ -16,7 +16,7 @@
 import path from 'node:path';
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages, SfError } from '@salesforce/core';
-import { executeNativeScan, type NativeScanResult } from '../utils/nativeScan.js';
+import { executeNativeScan, isStreamingSourceNameMissing, type NativeScanResult } from '../utils/nativeScan.js';
 import { checkEnvironment, type EnvironmentCheckResult } from '../utils/environmentChecker.js';
 import {
   countEntriesReferencing,
@@ -70,6 +70,10 @@ export abstract class ScanBase extends SfCommand<ScanResult> {
             : undefined,
       });
       this.spinner.stop();
+
+      if (codeType === 'script' && isStreamingSourceNameMissing(executionResult.config)) {
+        this.warn(messages.getMessage('warning.streamingSourceNameEmpty'));
+      }
 
       if (codeType === 'script' && executionResult.dryRun) {
         const stale = findStaleLineage(executionResult.config);

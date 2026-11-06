@@ -8,6 +8,19 @@ Could not locate the datacustomcode init template at '%s'.
 - Run 'pip show salesforce-data-customcode' to confirm the install location
 - Reinstall with 'pip install --upgrade salesforce-data-customcode' if the templates directory is missing
 
+# error.initStreamingTemplateNotFound
+
+The installed salesforce-data-customcode package (version %s) doesn't include the streaming template at '%s'. StreamingTransform needs version 7.0.0 or later.
+
+# actions.initStreamingTemplateNotFound
+
+- Upgrade with 'pip install --upgrade salesforce-data-customcode'
+- Run 'pip show salesforce-data-customcode' to confirm the installed version
+
+# error.initInvalidScriptFeature
+
+Invalid use-in-feature '%s' for a script package. Valid values: %s.
+
 # error.scanEntrypointMissing
 
 Entrypoint file not found at '%s'.
