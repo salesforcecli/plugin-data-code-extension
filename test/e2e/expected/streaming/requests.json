@@ -1,0 +1,64 @@
+[
+  {
+    "method": "POST",
+    "path": "/services/data/v67.0/ssot/data-custom-code",
+    "body": {
+      "label": "smoke_streaming",
+      "name": "smoke_streaming",
+      "description": "Smoke test streaming script",
+      "version": "1.0.0",
+      "computeType": "CPU_M",
+      "codeType": "script",
+      "invokeOptions": ["StreamingTransform"]
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/upload/smoke_streaming",
+    "zipEntries": ["config.json", "entrypoint.py"]
+  },
+  {
+    "method": "GET",
+    "path": "/services/data/v63.0/ssot/data-custom-code/smoke_streaming"
+  },
+  {
+    "method": "POST",
+    "path": "/services/data/v63.0/ssot/data-transforms",
+    "body": {
+      "definition": {
+        "type": "DCSQL",
+        "manifest": {
+          "nodes": {
+            "node1": {
+              "relation_name": "Smoke_Stream_Target__dll",
+              "config": {
+                "materialized": "table"
+              },
+              "compiled_code": ""
+            }
+          },
+          "sources": {
+            "source1": {
+              "relation_name": "Smoke_Stream_Source__dll"
+            }
+          },
+          "macros": {
+            "macro.byoc": {
+              "arguments": [
+                {
+                  "name": "smoke_streaming",
+                  "type": "BYOC_SCRIPT"
+                }
+              ]
+            }
+          }
+        },
+        "version": "56.0"
+      },
+      "label": "smoke_streaming",
+      "name": "smoke_streaming",
+      "type": "STREAMING",
+      "dataSpaceName": "default"
+    }
+  }
+]

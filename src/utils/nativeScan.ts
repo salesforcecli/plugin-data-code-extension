@@ -29,6 +29,16 @@ export type DataAccessLayerCalls = {
   writeToDmo: Set<string>;
 };
 
+/** Mirror of `datacustomcode/scan.py:StreamingDataAccessLayerCalls`. */
+export type StreamingDataAccessLayerCalls = {
+  readDloDeltas: boolean;
+  readDmoDeltas: boolean;
+  writeDloDeltas: Set<string>;
+  writeDmoDeltas: Set<string>;
+};
+
+export type StreamingSource = { type: 'dlo' | 'dmo'; name: string };
+
 export type ScanPermissions = {
   read: { dlo?: string[]; dmo?: string[] };
   write: { dlo?: string[]; dmo?: string[] };
@@ -73,6 +83,9 @@ const SDK_CONFIG_DIR = '.datacustomcode_proj';
 const SDK_CONFIG_FILE = 'sdk_config.json';
 
 const DATA_ACCESS_METHODS = new Set(['read_dlo', 'read_dmo', 'write_to_dlo', 'write_to_dmo']);
+// Mirror of STREAMING_READ_METHODS / STREAMING_WRITE_METHODS in `datacustomcode/scan.py`.
+const STREAMING_READ_METHODS = new Set(['read_dlo_deltas', 'read_dmo_deltas']);
+const STREAMING_WRITE_METHODS = new Set(['write_dlo_deltas', 'write_dmo_deltas']);
 
 const EXCLUDED_PACKAGES = new Set<string>(['datacustomcode', 'pyspark']);
 
@@ -164,6 +177,35 @@ export async function getPackageType(baseDirectory: string): Promise<CodeType> {
  * Reassignments and post-call assignments behave correctly.
  */
 export async function scanFile(filePath: string): Promise<DataAccessLayerCalls> {
+  const { batch } = await visitFile(filePath);
+  validateAccessLayer(batch);
+  return batch;
+}
+
+/**
+ * Mirror of `datacustomcode/scan.py:scan_file_streaming`. Collects the delta calls
+ * (`read_dlo_deltas()` / `read_dmo_deltas()` flags, and `write_dlo_deltas` /
+ * `write_dmo_deltas` targets resolved like the batch scan) and validates them.
+ */
+export async function scanFileStreaming(filePath: string): Promise<StreamingDataAccessLayerCalls> {
+  const { streaming } = await visitFile(filePath);
+  validateStreamingAccessLayer(streaming);
+  return streaming;
+}
+
+/** Mirror of `datacustomcode/scan.py:file_is_streaming`: true when any delta method is called. */
+export async function fileIsStreaming(filePath: string): Promise<boolean> {
+  return isStreaming((await visitFile(filePath)).streaming);
+}
+
+function isStreaming(calls: StreamingDataAccessLayerCalls): boolean {
+  return calls.readDloDeltas || calls.readDmoDeltas || calls.writeDloDeltas.size > 0 || calls.writeDmoDeltas.size > 0;
+}
+
+/** Single pass over the entrypoint collecting both batch and streaming calls, without validating. */
+async function visitFile(
+  filePath: string
+): Promise<{ batch: DataAccessLayerCalls; streaming: StreamingDataAccessLayerCalls }> {
   const code = await fs.readFile(filePath, 'utf8');
   const masked = computeCommentStringMask(code);
 
@@ -172,6 +214,12 @@ export async function scanFile(filePath: string): Promise<DataAccessLayerCalls> 
     readDmo: new Set<string>(),
     writeToDlo: new Set<string>(),
     writeToDmo: new Set<string>(),
+  };
+  const streaming: StreamingDataAccessLayerCalls = {
+    readDloDeltas: false,
+    readDmoDeltas: false,
+    writeDloDeltas: new Set<string>(),
+    writeDmoDeltas: new Set<string>(),
   };
 
   // Collect assignments and method calls as ordered events, then walk in source order.
@@ -198,12 +246,19 @@ export async function scanFile(filePath: string): Promise<DataAccessLayerCalls> 
     events.push({ kind: 'assign', offset: m.index, name: m[1], value: m[2] ?? m[3] ?? '' });
   }
 
+  // The first argument is optional so the no-arg `read_*_deltas()` calls match; a batch or
+  // delta-write call without a resolvable first argument is skipped below, like the AST visitor.
   const callRegex =
-    /\.(?<method>read_dlo|read_dmo|write_to_dlo|write_to_dmo)\s*\(\s*(?:"(?<dq>[^"\\]*)"|'(?<sq>[^'\\]*)'|(?<ident>[A-Za-z_]\w*))/g;
+    /\.(?<method>read_dlo_deltas|read_dmo_deltas|write_dlo_deltas|write_dmo_deltas|read_dlo|read_dmo|write_to_dlo|write_to_dmo)\s*\(\s*(?:"(?<dq>[^"\\]*)"|'(?<sq>[^'\\]*)'|(?<ident>[A-Za-z_]\w*))?/g;
   while ((m = callRegex.exec(code)) !== null) {
     if (masked[m.index]) continue; // call lives inside a comment/string
     const g = m.groups as { method: string; dq?: string; sq?: string; ident?: string };
-    if (!DATA_ACCESS_METHODS.has(g.method)) continue;
+    if (STREAMING_READ_METHODS.has(g.method)) {
+      if (g.method === 'read_dlo_deltas') streaming.readDloDeltas = true;
+      else streaming.readDmoDeltas = true;
+      continue;
+    }
+    if (!DATA_ACCESS_METHODS.has(g.method) && !STREAMING_WRITE_METHODS.has(g.method)) continue;
     const literal = g.dq ?? g.sq;
     events.push({
       kind: 'call',
@@ -216,6 +271,16 @@ export async function scanFile(filePath: string): Promise<DataAccessLayerCalls> 
 
   events.sort((a, b) => a.offset - b.offset);
 
+  /* eslint-disable camelcase -- keys are the SDK client method names */
+  const targets: Record<string, Set<string>> = {
+    read_dlo: result.readDlo,
+    read_dmo: result.readDmo,
+    write_to_dlo: result.writeToDlo,
+    write_to_dmo: result.writeToDmo,
+    write_dlo_deltas: streaming.writeDloDeltas,
+    write_dmo_deltas: streaming.writeDmoDeltas,
+  };
+  /* eslint-enable camelcase */
   const variableValues = new Map<string, string>();
   for (const ev of events) {
     if (ev.kind === 'assign') {
@@ -230,24 +295,10 @@ export async function scanFile(filePath: string): Promise<DataAccessLayerCalls> 
     }
     if (!name) continue;
 
-    switch (ev.method) {
-      case 'read_dlo':
-        result.readDlo.add(name);
-        break;
-      case 'read_dmo':
-        result.readDmo.add(name);
-        break;
-      case 'write_to_dlo':
-        result.writeToDlo.add(name);
-        break;
-      case 'write_to_dmo':
-        result.writeToDmo.add(name);
-        break;
-    }
+    targets[ev.method]?.add(name);
   }
 
-  validateAccessLayer(result);
-  return result;
+  return { batch: result, streaming };
 }
 
 /**
@@ -321,6 +372,44 @@ function validateAccessLayer(calls: DataAccessLayerCalls): void {
   }
   if (calls.readDmo.size > 0 && calls.writeToDlo.size > 0) {
     throw new SfError('Cannot read from DMO and write to DLO in the same file.', 'InvalidEntrypoint');
+  }
+}
+
+function streamingReadLayer(calls: StreamingDataAccessLayerCalls): 'dlo' | 'dmo' {
+  return calls.readDloDeltas ? 'dlo' : 'dmo';
+}
+
+function streamingWriteLayer(calls: StreamingDataAccessLayerCalls): 'dlo' | 'dmo' {
+  return calls.writeDloDeltas.size > 0 ? 'dlo' : 'dmo';
+}
+
+/** Mirror of `StreamingDataAccessLayerCalls.validate_access_layer` (same messages). */
+function validateStreamingAccessLayer(calls: StreamingDataAccessLayerCalls): void {
+  if (calls.readDloDeltas && calls.readDmoDeltas) {
+    throw new SfError('Cannot read DLO and DMO deltas in the same streaming transform.', 'InvalidEntrypoint');
+  }
+  if (!calls.readDloDeltas && !calls.readDmoDeltas) {
+    throw new SfError(
+      'A streaming transform must read from at least one DLO or DMO delta stream (read_dlo_deltas / read_dmo_deltas).',
+      'InvalidEntrypoint'
+    );
+  }
+  if (calls.writeDloDeltas.size === 0 && calls.writeDmoDeltas.size === 0) {
+    throw new SfError(
+      'A streaming transform must write to at least one DLO or DMO via write_dlo_deltas / write_dmo_deltas.',
+      'InvalidEntrypoint'
+    );
+  }
+  if (calls.writeDloDeltas.size > 0 && calls.writeDmoDeltas.size > 0) {
+    throw new SfError('Cannot write DLO and DMO deltas in the same streaming transform.', 'InvalidEntrypoint');
+  }
+  const read = streamingReadLayer(calls);
+  const write = streamingWriteLayer(calls);
+  if (read !== write) {
+    throw new SfError(
+      `A streaming transform must read and write the same layer (got read=${read}, write=${write}).`,
+      'InvalidEntrypoint'
+    );
   }
 }
 
@@ -428,11 +517,51 @@ export async function updateConfig(
 
   if (packageType === 'script') {
     existing.dataspace = resolveDataspace(existing);
-    const calls = await scanFile(entrypointPath);
-    existing.permissions = buildPermissions(calls);
+    const { batch, streaming } = await visitFile(entrypointPath);
+    if (isStreaming(streaming)) {
+      updateStreamingConfig(existing, streaming);
+    } else {
+      delete existing.streamingSource;
+      validateAccessLayer(batch);
+      existing.permissions = buildPermissions(batch);
+    }
   }
 
   return existing;
+}
+
+/**
+ * Mirror of `datacustomcode/scan.py:_update_streaming_config`. The streaming read source
+ * cannot be inferred from `read_*_deltas()`, so `streamingSource.name` is kept from the
+ * existing config and is the only read permission; writes come from the scan.
+ */
+function updateStreamingConfig(existing: Record<string, unknown>, calls: StreamingDataAccessLayerCalls): void {
+  validateStreamingAccessLayer(calls);
+  const readLayer = streamingReadLayer(calls);
+  const source = existing.streamingSource;
+  const name = isPlainObject(source) && typeof source.name === 'string' ? source.name : '';
+  const streamingSource: StreamingSource = { type: readLayer, name };
+  existing.streamingSource = streamingSource;
+  existing.permissions = {
+    read: { [readLayer]: name ? [name] : [] },
+    write: {
+      [streamingWriteLayer(calls)]: [...(calls.writeDloDeltas.size > 0 ? calls.writeDloDeltas : calls.writeDmoDeltas)],
+    },
+  };
+}
+
+/**
+ * True when a streaming config has no `streamingSource.name` yet. Callers warn, since a
+ * streaming transform must declare the DLO/DMO it reads from.
+ */
+export function isStreamingSourceNameMissing(config: Record<string, unknown>): boolean {
+  const source = config.streamingSource;
+  if (source === undefined) return false;
+  return !isPlainObject(source) || typeof source.name !== 'string' || source.name === '';
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /** Read and parse a package's config.json, with the errors `updateConfig` raises. */

@@ -17,6 +17,7 @@ import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { executeNativeInit, type NativeInitResult } from '../utils/nativeInit.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
+import { SCRIPT_USE_IN_FEATURE_STREAMING } from '../utils/constants.js';
 import { type SharedResultProps } from './types.js';
 
 export type BaseInitFlags = {
@@ -56,6 +57,11 @@ export abstract class InitBase<TFlags extends BaseInitFlags = BaseInitFlags> ext
       executionResult.filesCreated.forEach((file) => {
         this.log(messages.getMessage('info.fileCreated', [file]));
       });
+
+      // The streaming read source can't be scanned from the code, so the new config.json leaves it empty.
+      if (codeType === 'script' && additionalFlags.useInFeature === SCRIPT_USE_IN_FEATURE_STREAMING) {
+        this.warn(messages.getMessage('warning.streamingSourceNameEmpty', [executionResult.configPath]));
+      }
 
       return {
         success: true,

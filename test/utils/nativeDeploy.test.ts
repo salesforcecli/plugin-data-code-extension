@@ -50,6 +50,11 @@ const SCRIPT_DLO_CONFIG = {
   permissions: { read: { dlo: ['Account__dll'] }, write: { dlo: ['Result__dll'] } },
 };
 
+const SCRIPT_STREAMING_CONFIG = {
+  ...SCRIPT_DLO_CONFIG,
+  streamingSource: { type: 'dlo', name: 'Account__dll' },
+};
+
 /** Await a promise expected to reject and return the error for assertions. */
 async function expectReject(promise: Promise<unknown>): Promise<SfError> {
   try {
@@ -305,6 +310,17 @@ describe('nativeDeploy.buildDataTransformBody', () => {
     ]);
   });
 
+  it('marks the transform STREAMING when the config declares a streamingSource', () => {
+    const config: DataTransformConfig = {
+      entryPoint: 'entrypoint.py',
+      sdkVersion: '1.0.0',
+      dataspace: 'my_space',
+      permissions: { read: { dlo: ['Account__dll'] }, write: { dlo: ['Result__dll'] } },
+      streamingSource: { type: 'dlo', name: 'Account__dll' },
+    };
+    expect(buildDataTransformBody(metadata, config).type).to.equal('STREAMING');
+  });
+
   it('throws when a DMO transform is missing dataObjects', () => {
     const config: DataTransformConfig = {
       entryPoint: 'entrypoint.py',
@@ -322,6 +338,31 @@ describe('nativeDeploy.getConfig', () => {
     const config = (await getConfig(packageDir, 'script')) as DataTransformConfig;
     expect(config.dataspace).to.equal('my_space');
     expect(config.permissions.read.dlo).to.deep.equal(['Account__dll']);
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('parses the optional streamingSource', async () => {
+    const { dir, packageDir } = await makePackage({ packageType: 'script', config: SCRIPT_STREAMING_CONFIG });
+    const config = (await getConfig(packageDir, 'script')) as DataTransformConfig;
+    expect(config.streamingSource).to.deep.equal({ type: 'dlo', name: 'Account__dll' });
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('leaves streamingSource unset for a batch config', async () => {
+    const { dir, packageDir } = await makePackage({ packageType: 'script', config: SCRIPT_DLO_CONFIG });
+    const config = (await getConfig(packageDir, 'script')) as DataTransformConfig;
+    expect(config).to.not.have.property('streamingSource');
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('rejects a malformed streamingSource', async () => {
+    const { dir, packageDir } = await makePackage({
+      packageType: 'script',
+      config: { ...SCRIPT_DLO_CONFIG, streamingSource: { type: 'dlo' } },
+    });
+    const err = await expectReject(getConfig(packageDir, 'script'));
+    expect(err.name).to.equal('InvalidConfig');
+    expect(err.message).to.match(/streamingSource/);
     await fs.rm(dir, { recursive: true, force: true });
   });
 
@@ -560,6 +601,66 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
     expect((dataTransformBodies[0] as Record<string, unknown>).dataSpaceName).to.equal('my_space');
     await fs.rm(dir, { recursive: true, force: true });
   });
+
+  it('deploys a streaming script with StreamingTransform invokeOptions and a STREAMING transform', async () => {
+    const { dir, packageDir } = await makePackage({ packageType: 'script', config: SCRIPT_STREAMING_CONFIG });
+    const { deps, createdMetadata, dataTransformBodies } = recordingDeps();
+
+    await NativeDeployer.deploy(
+      { name: 'my_stream', version: '1', description: 'd', packageDir, cpuSize: 'CPU_L', connection: dummyConnection },
+      deps
+    );
+
+    expect(createdMetadata[0].invokeOptions).to.deep.equal(['StreamingTransform']);
+    expect((dataTransformBodies[0] as Record<string, unknown>).type).to.equal('STREAMING');
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('does not set invokeOptions for a batch script', async () => {
+    const { dir, packageDir } = await makePackage({ packageType: 'script', config: SCRIPT_DLO_CONFIG });
+    const { deps, createdMetadata, dataTransformBodies } = recordingDeps();
+
+    await NativeDeployer.deploy(
+      { name: 'my_batch', version: '1', description: 'd', packageDir, cpuSize: 'CPU_L', connection: dummyConnection },
+      deps
+    );
+
+    expect(createdMetadata[0].invokeOptions).to.equal(undefined);
+    expect((dataTransformBodies[0] as Record<string, unknown>).type).to.equal('BATCH');
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  for (const [label, config, expectedPath, expectedInvokeOptions] of [
+    ['batch', SCRIPT_DLO_CONFIG, '/services/data/v63.0/ssot/data-custom-code', undefined],
+    ['streaming', SCRIPT_STREAMING_CONFIG, '/services/data/v67.0/ssot/data-custom-code', ['StreamingTransform']],
+  ] as const) {
+    it(`creates a ${label} deployment on ${expectedPath}`, async () => {
+      const { dir, packageDir } = await makePackage({ packageType: 'script', config });
+      const requests: Array<{ url: string; body: Record<string, unknown> }> = [];
+      // Record the real default createDeployment request, then stop the deploy with a 409.
+      const connection = {
+        request: (req: { url: string; body: string }) => {
+          requests.push({ url: req.url, body: JSON.parse(req.body) as Record<string, unknown> });
+          return Promise.reject(Object.assign(new Error('conflict'), { statusCode: 409 }));
+        },
+      } as unknown as Connection;
+
+      await expectReject(
+        NativeDeployer.deploy({
+          name: 'my_script',
+          version: '1',
+          description: 'd',
+          packageDir,
+          cpuSize: 'CPU_L',
+          connection,
+        })
+      );
+      expect(requests).to.have.length(1);
+      expect(requests[0].url).to.equal(expectedPath);
+      expect(requests[0].body.invokeOptions).to.deep.equal(expectedInvokeOptions);
+      await fs.rm(dir, { recursive: true, force: true });
+    });
+  }
 
   it('infers the feature for a function package and skips the data transform', async () => {
     const { dir, packageDir } = await makePackage({

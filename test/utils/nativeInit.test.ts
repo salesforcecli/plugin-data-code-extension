@@ -31,7 +31,35 @@ type FakePackageOptions = {
   scriptConfig?: Record<string, unknown>;
   functionEntrypoint?: string;
   functionConfig?: Record<string, unknown>;
+  /** Include the SDK 7.0.0+ streaming example and run config.yaml (default true). */
+  streaming?: boolean;
 };
+
+const STREAMING_EXAMPLE = [
+  'from datacustomcode.client import StreamingClient',
+  'def main():',
+  '    target_dlo = "Account_std_copy__dll"',
+  '    client = StreamingClient()',
+  '    df = client.read_dlo_deltas()',
+  '    client.write_dlo_deltas(target_dlo, df).awaitTermination()',
+  '',
+].join('\n');
+
+const SDK_CONFIG_YAML = [
+  'reader_config:',
+  '  type_config_name: QueryAPIDataCloudReader',
+  '  options:',
+  '    credentials_profile: default',
+  '',
+  'writer_config:',
+  '  type_config_name: PrintDataCloudWriter',
+  '',
+  'spark_config:',
+  '  options:',
+  '    # Resolve columns case-sensitively.',
+  "    spark.sql.caseSensitive: 'true'",
+  '',
+].join('\n');
 
 async function buildFakePythonPackage(opts: FakePackageOptions = {}): Promise<string> {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'nativeinit-fake-pkg-'));
@@ -62,6 +90,12 @@ async function buildFakePythonPackage(opts: FakePackageOptions = {}): Promise<st
     JSON.stringify(opts.scriptConfig ?? { dataspace: 'default' }, null, 2)
   );
   await fs.writeFile(path.join(templates, 'script', 'requirements.txt'), 'pandas\n');
+  if (opts.streaming ?? true) {
+    const streamingDir = path.join(templates, 'script', 'examples', 'streaming_deltas');
+    await fs.mkdir(streamingDir, { recursive: true });
+    await fs.writeFile(path.join(streamingDir, 'entrypoint.py'), STREAMING_EXAMPLE);
+    await fs.writeFile(path.join(root, 'datacustomcode', 'config.yaml'), SDK_CONFIG_YAML);
+  }
 
   // function template (base + chunking feature subdir)
   const functionPayload = path.join(templates, 'function', 'payload');
@@ -85,6 +119,24 @@ async function buildFakePythonPackage(opts: FakePackageOptions = {}): Promise<st
   await fs.writeFile(path.join(chunkingPayload, 'config.json'), '{}');
 
   return root;
+}
+
+async function expectMissing(p: string): Promise<void> {
+  try {
+    await fs.access(p);
+  } catch {
+    return;
+  }
+  expect.fail(`expected ${p} not to exist`);
+}
+
+async function expectInitError(opts: Parameters<typeof executeNativeInit>[0]): Promise<Error> {
+  try {
+    await executeNativeInit(opts);
+  } catch (err) {
+    return err as Error;
+  }
+  return expect.fail('expected init to throw');
 }
 
 describe('executeNativeInit', () => {
@@ -131,6 +183,76 @@ describe('executeNativeInit', () => {
     expect(config.dataspace).to.equal('default');
     expect(config.permissions.read.dlo).to.deep.equal(['Account_std__dll']);
     expect(config.permissions.write.dlo).to.deep.equal(['Account_std_copy__dll']);
+  });
+
+  it('writes no streaming files for a BatchTransform script', async () => {
+    const packageDir = path.join(workdir, 'my-batch');
+    const result = await executeNativeInit({
+      codeType: 'script',
+      packageDir,
+      pythonPackageLocation,
+      pythonPackageVersion: '1.2.3',
+      useInFeature: 'BatchTransform',
+    });
+
+    const config = JSON.parse(await fs.readFile(result.configPath, 'utf8')) as Record<string, unknown>;
+    expect(config).to.not.have.property('streamingSource');
+    await expectMissing(path.join(packageDir, 'config.yaml'));
+  });
+
+  it('initializes a StreamingTransform script from the streaming example', async () => {
+    const packageDir = path.join(workdir, 'my-stream');
+    const result = await executeNativeInit({
+      codeType: 'script',
+      packageDir,
+      pythonPackageLocation,
+      pythonPackageVersion: '7.0.0',
+      useInFeature: 'StreamingTransform',
+    });
+
+    expect(await fs.readFile(path.join(packageDir, 'payload', 'entrypoint.py'), 'utf8')).to.equal(STREAMING_EXAMPLE);
+
+    const config = JSON.parse(await fs.readFile(result.configPath, 'utf8')) as Record<string, unknown>;
+    expect(config.streamingSource).to.deep.equal({ type: 'dlo', name: '' });
+    expect(config.permissions).to.deep.equal({ read: { dlo: [] }, write: { dlo: ['Account_std_copy__dll'] } });
+
+    // Reader/writer switched; everything else, comments and quoting included, kept.
+    expect(await fs.readFile(path.join(packageDir, 'config.yaml'), 'utf8')).to.equal(
+      SDK_CONFIG_YAML.replace('QueryAPIDataCloudReader', 'LocalDeltasReader').replace(
+        'PrintDataCloudWriter',
+        'LocalDeltasWriter'
+      )
+    );
+  });
+
+  it('fails before copying anything when the SDK has no streaming template', async () => {
+    const oldSdk = await buildFakePythonPackage({ streaming: false });
+    const packageDir = path.join(workdir, 'my-stream');
+    try {
+      const err = await expectInitError({
+        codeType: 'script',
+        packageDir,
+        pythonPackageLocation: oldSdk,
+        pythonPackageVersion: '6.0.0',
+        useInFeature: 'StreamingTransform',
+      });
+      expect(err.name).to.equal('InitStreamingTemplateNotFound');
+      expect(err.message).to.include('6.0.0');
+      await expectMissing(packageDir);
+    } finally {
+      await fs.rm(oldSdk, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects an unknown script use-in-feature', async () => {
+    const err = await expectInitError({
+      codeType: 'script',
+      packageDir: path.join(workdir, 'pkg'),
+      pythonPackageLocation,
+      pythonPackageVersion: '7.0.0',
+      useInFeature: 'SearchIndexChunking',
+    });
+    expect(err.name).to.equal('InvalidUseInFeature');
   });
 
   it('always writes dataspace=default for a script regardless of template config', async () => {

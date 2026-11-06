@@ -290,6 +290,11 @@ DESCRIPTION
   Scans Python files in an initialized Data Code Extension package directory to identify required permissions and
   dependencies. Updates the config.json and requirements.txt files based on the code analysis.
 
+  For a script that calls the streaming delta methods (read_dlo_deltas or read_dmo_deltas, and write_dlo_deltas or
+  write_dmo_deltas), scan writes a streaming config instead. The read source can't be detected from the code, so scan
+  keeps streamingSource.name from config.json and uses it as the only read permission. Write permissions come from the
+  delta writes.
+
 EXAMPLES
   Scan with a custom entrypoint file:
 
@@ -481,6 +486,10 @@ FLAG DESCRIPTIONS
 
     Which transform feature this script is used in: BatchTransform (a bounded, batch data transform; the default) or
     StreamingTransform (a streaming data transform over a DLO/DMO change feed). Defaults to BatchTransform.
+
+    StreamingTransform starts from the SDK's streaming example entrypoint, adds an empty streamingSource to config.json,
+    and writes a config.yaml that switches 'run' to the local delta reader and writer. Requires
+    salesforce-data-customcode 7.0.0 or later.
 ```
 
 _See code: [src/commands/data-code-extension/script/init.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/1.6.3/src/commands/data-code-extension/script/init.ts)_
@@ -565,6 +574,11 @@ DESCRIPTION
 
   Scans Python files in an initialized Data Code Extension package directory to identify required permissions and
   dependencies. Updates the config.json and requirements.txt files based on the code analysis.
+
+  For a script that calls the streaming delta methods (read_dlo_deltas or read_dmo_deltas, and write_dlo_deltas or
+  write_dmo_deltas), scan writes a streaming config instead. The read source can't be detected from the code, so scan
+  keeps streamingSource.name from config.json and uses it as the only read permission. Write permissions come from the
+  delta writes.
 
 EXAMPLES
   Scan with a custom entrypoint file:
