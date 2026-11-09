@@ -1,3 +1,9 @@
+## [1.6.3](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.6.2...1.6.3) (2026-11-09)
+
+### Bug Fixes
+
+- correct repository name in README clone command ([bae5846](https://github.com/salesforcecli/plugin-data-code-extension/commit/bae5846e11b39125c141949b1abb23c42a673062))
+
 ## [1.6.2](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.6.1...1.6.2) (2026-11-06)
 
 ### Bug Fixes
