@@ -43,7 +43,7 @@ To build the plugin locally, make sure to have yarn installed and run the follow
 
 ```bash
 # Clone the repository
-git clone git@github.com:salesforcecli/data-code-extension
+git clone git@github.com:salesforcecli/plugin-data-code-extension
 
 # Install the dependencies and compile
 yarn && yarn build
