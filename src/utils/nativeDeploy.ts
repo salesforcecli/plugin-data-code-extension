@@ -482,6 +482,15 @@ function parseStreamingSource(value: unknown, configPath: string): { streamingSo
       'InvalidConfig'
     );
   }
+  // Stricter than the SDK: init leaves the name empty, and deploying that creates a
+  // STREAMING transform with no input source.
+  if (value.name.trim().length === 0) {
+    throw new SfError(
+      messages.getMessage('error.streamingSourceNameEmpty', [configPath]),
+      'StreamingSourceNameEmpty',
+      messages.getMessages('actions.streamingSourceNameEmpty')
+    );
+  }
   return { streamingSource: { type: value.type, name: value.name } };
 }
 

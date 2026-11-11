@@ -366,6 +366,20 @@ describe('nativeDeploy.getConfig', () => {
     await fs.rm(dir, { recursive: true, force: true });
   });
 
+  for (const name of ['', '   ']) {
+    it(`rejects a streamingSource with a blank name (${JSON.stringify(name)})`, async () => {
+      const { dir, packageDir } = await makePackage({
+        packageType: 'script',
+        config: { ...SCRIPT_STREAMING_CONFIG, streamingSource: { type: 'dlo', name } },
+      });
+      const err = await expectReject(getConfig(packageDir, 'script'));
+      expect(err.name).to.equal('StreamingSourceNameEmpty');
+      expect(err.message).to.include('streamingSource.name');
+      expect(err.actions?.join('\n')).to.include('scan');
+      await fs.rm(dir, { recursive: true, force: true });
+    });
+  }
+
   it('parses the optional dataObjects schema for a DLO write config', async () => {
     const { dir, packageDir } = await makePackage({
       packageType: 'script',
@@ -599,6 +613,31 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
     expect(createdMetadata[0].name).to.equal('my_script');
     expect(createdMetadata[0].functionInvokeOptions).to.equal(undefined);
     expect((dataTransformBodies[0] as Record<string, unknown>).dataSpaceName).to.equal('my_space');
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('rejects a streaming script with no streamingSource.name before any API call', async () => {
+    // The config exactly as `script init -u StreamingTransform` writes it.
+    const { dir, packageDir } = await makePackage({
+      packageType: 'script',
+      config: { ...SCRIPT_STREAMING_CONFIG, streamingSource: { type: 'dlo', name: '' } },
+    });
+    const { deps, order } = recordingDeps();
+    const err = await expectReject(
+      NativeDeployer.deploy(
+        {
+          name: 'my-stream',
+          version: '1.0.0',
+          description: 'd',
+          packageDir,
+          cpuSize: 'CPU_2XL',
+          connection: dummyConnection,
+        },
+        deps
+      )
+    );
+    expect(err.name).to.equal('StreamingSourceNameEmpty');
+    expect(order).to.deep.equal([]);
     await fs.rm(dir, { recursive: true, force: true });
   });
 

@@ -221,6 +221,15 @@ config.json at %s is missing required fields: %s.
 
 config.json at %s is invalid: %s.
 
+# error.streamingSourceNameEmpty
+
+streamingSource.name is empty in config.json at %s. A streaming transform needs the DLO or DMO it reads from.
+
+# actions.streamingSourceNameEmpty
+
+- Set streamingSource.name in config.json to the DLO or DMO the streaming transform reads from.
+- Run 'sf data-code-extension script scan' to update permissions, then deploy again.
+
 # error.dmoRequiresDataObjects
 
 DMO transforms require 'dataObjects' in config.json describing the schema of each output DMO.
