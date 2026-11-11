@@ -244,6 +244,25 @@ describe('executeNativeInit', () => {
     }
   });
 
+  it('reports a missing template, not an old SDK, when a 7.x SDK lacks the streaming template', async () => {
+    const brokenSdk = await buildFakePythonPackage({ streaming: false });
+    const packageDir = path.join(workdir, 'my-stream-7');
+    try {
+      const err = await expectInitError({
+        codeType: 'script',
+        packageDir,
+        pythonPackageLocation: brokenSdk,
+        pythonPackageVersion: '7.0.1.dev8',
+        useInFeature: 'StreamingTransform',
+      });
+      expect(err.name).to.equal('InitTemplateNotFound');
+      expect(err.message).to.include(path.join('examples', 'streaming_deltas', 'entrypoint.py'));
+      await expectMissing(packageDir);
+    } finally {
+      await fs.rm(brokenSdk, { recursive: true, force: true });
+    }
+  });
+
   it('rejects an unknown script use-in-feature', async () => {
     const err = await expectInitError({
       codeType: 'script',

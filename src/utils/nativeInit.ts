@@ -33,6 +33,7 @@ const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension',
 export type NativeInitOptions = {
   codeType: CodeType;
   packageDir: string;
+  /** Directory containing the `datacustomcode` package (site-packages, or `src/` for editable installs). */
   pythonPackageLocation: string;
   pythonPackageVersion: string;
   useInFeature?: string;
@@ -54,6 +55,8 @@ const SDK_CONFIG_FILE = 'sdk_config.json';
 // Mirror of `datacustomcode/template.py`: the streaming example entrypoint, and the SDK's
 // run config, which streaming packages get a copy of with the local delta reader/writer.
 const STREAMING_EXAMPLE_ENTRYPOINT = path.join('examples', 'streaming_deltas', ENTRYPOINT_FILE);
+// First SDK major version that ships the streaming template.
+const STREAMING_MIN_SDK_MAJOR = 7;
 const SDK_RUN_CONFIG_FILE = 'config.yaml';
 
 const FEATURE_TEMPLATE_MAPPING: Readonly<Record<string, string>> = {
@@ -136,6 +139,14 @@ function resolveScriptFeature(useInFeature: string | undefined): string {
 async function ensureStreamingTemplateExists(scriptTemplateDir: string, sdkVersion: string): Promise<void> {
   const entrypoint = path.join(scriptTemplateDir, STREAMING_EXAMPLE_ENTRYPOINT);
   if (!(await pathExists(entrypoint))) {
+    // 7.0.0+ ships the template, so a missing file there is an install problem, not an old SDK.
+    if (Number.parseInt(sdkVersion, 10) >= STREAMING_MIN_SDK_MAJOR) {
+      throw new SfError(
+        messages.getMessage('error.initTemplateNotFound', [entrypoint]),
+        'InitTemplateNotFound',
+        messages.getMessages('actions.initTemplateNotFound')
+      );
+    }
     throw new SfError(
       messages.getMessage('error.initStreamingTemplateNotFound', [sdkVersion, entrypoint]),
       'InitStreamingTemplateNotFound',

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import * as path from 'node:path';
 import { TestContext } from '@salesforce/core/testSetup';
 import { SfError } from '@salesforce/core';
 import { expect } from 'chai';
@@ -23,6 +24,22 @@ describe('PythonChecker', () => {
 
   afterEach(() => {
     $$.restore();
+  });
+
+  describe('findPackageDir', () => {
+    it('returns the directory of an installed package', async () => {
+      const dir = await PythonChecker.findPackageDir('python3', 'json');
+      // python3 may be missing on the test machine; when present, json is a stdlib package.
+      if (dir !== null) expect(path.basename(dir)).to.equal('json');
+    });
+
+    it('returns null for a package that is not installed', async () => {
+      expect(await PythonChecker.findPackageDir('python3', 'no_such_package_xyz')).to.be.null;
+    });
+
+    it('returns null when the Python command does not exist', async () => {
+      expect(await PythonChecker.findPackageDir('no-such-python-xyz', 'json')).to.be.null;
+    });
   });
 
   describe('checkPython311', () => {

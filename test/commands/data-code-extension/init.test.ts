@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { TestContext } from '@salesforce/core/testSetup';
 import { expect } from 'chai';
+import type * as sinon from 'sinon';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
 import ScriptInit from '../../../src/commands/data-code-extension/script/init.js';
 import FunctionInit from '../../../src/commands/data-code-extension/function/init.js';
@@ -283,6 +284,8 @@ describe('data-code-extension init commands', () => {
 
   describe('with a stubbed environment', () => {
     let root: string;
+    let checkPackageStub: sinon.SinonStub;
+    let findPackageDirStub: sinon.SinonStub;
 
     beforeEach(() => {
       root = mkdtempSync(path.join(tmpdir(), 'init-command-'));
@@ -312,16 +315,37 @@ describe('data-code-extension init commands', () => {
         minor: 11,
         patch: 5,
       });
-      $$.SANDBOX.stub(PipChecker, 'checkPackage').resolves({
+      checkPackageStub = $$.SANDBOX.stub(PipChecker, 'checkPackage').resolves({
         name: 'salesforce-data-customcode',
         version: '7.0.0',
         location: path.join(root, 'site-packages'),
         pipCommand: 'pip3',
       });
+      // Default: Python can't locate the SDK, so init falls back to pip's location.
+      findPackageDirStub = $$.SANDBOX.stub(PythonChecker, 'findPackageDir').resolves(null);
     });
 
     afterEach(() => {
       rmSync(root, { recursive: true, force: true });
+    });
+
+    it('uses the SDK location reported by Python for an editable install', async () => {
+      // Editable installs: pip reports a site-packages dir that doesn't hold the package.
+      const emptySitePackages = path.join(root, 'venv-site-packages');
+      mkdirSync(emptySitePackages);
+      checkPackageStub.resolves({
+        name: 'salesforce-data-customcode',
+        version: '7.0.1.dev8',
+        location: emptySitePackages,
+        pipCommand: 'pip3',
+      });
+      findPackageDirStub.resolves(path.join(root, 'site-packages', 'datacustomcode'));
+
+      const packageDir = path.join(root, 'editable');
+      await ScriptInit.run(['--package-dir', packageDir, '--use-in-feature', 'StreamingTransform']);
+
+      expect(findPackageDirStub.calledOnceWith('python3', 'datacustomcode')).to.be.true;
+      expect(readFileSync(path.join(packageDir, 'payload', 'entrypoint.py'), 'utf8')).to.include('read_dlo_deltas');
     });
 
     it('warns to set streamingSource.name after a StreamingTransform init', async () => {

@@ -28,9 +28,39 @@ export type PythonVersionInfo = {
   patch: number;
 };
 
+/**
+ * Prints the directory of the package named by argv[1], or nothing if it can't be found.
+ * `find_spec` locates the package without importing it, and it follows editable installs
+ * (`pip install -e`, `poetry install`) whose code lives outside site-packages.
+ */
+const FIND_PACKAGE_DIR_SHIM = [
+  'import sys, importlib.util',
+  'spec = importlib.util.find_spec(sys.argv[1])',
+  'locations = list(spec.submodule_search_locations or []) if spec else []',
+  "print(locations[0] if locations else '')",
+].join('\n');
+
 export class PythonChecker {
   private static readonly REQUIRED_MAJOR = 3;
   private static readonly REQUIRED_MINOR = 11;
+
+  /**
+   * Finds where `packageName` is installed for the given Python, as Python itself resolves it.
+   *
+   * @param command The Python command to ask (from checkPython311)
+   * @param packageName The importable package name, e.g. 'datacustomcode'
+   * @returns The package directory, or null if Python can't locate it
+   */
+  public static async findPackageDir(command: string, packageName: string): Promise<string | null> {
+    try {
+      // -P keeps the current directory off sys.path, so a local folder can't shadow the install.
+      const { stdout } = await spawnAsync(command, ['-P', '-c', FIND_PACKAGE_DIR_SHIM, packageName]);
+      const dir = stdout.trim();
+      return dir.length > 0 ? dir : null;
+    } catch {
+      return null;
+    }
+  }
 
   /**
    * Checks if Python 3.11 is installed on the system.
