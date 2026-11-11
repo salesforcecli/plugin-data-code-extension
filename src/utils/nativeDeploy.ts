@@ -19,7 +19,7 @@ import path from 'node:path';
 import { debuglog } from 'node:util';
 import { Messages, SfError, type Connection } from '@salesforce/core';
 import { decodeHTML } from 'entities';
-import { SCRIPT_USE_IN_FEATURE_STREAMING } from './constants.js';
+import { SCRIPT_USE_IN_FEATURE_BATCH, SCRIPT_USE_IN_FEATURE_STREAMING } from './constants.js';
 import { findBaseDirectory, getPackageType, type CodeType } from './nativeScan.js';
 import { zipWithSfError, ZIP_FILE_NAME, type ZipResult } from './zipBuilder.js';
 
@@ -729,6 +729,38 @@ export async function waitForDeployment(
   }
 }
 
+/** How often a "still waiting" line is printed while the status doesn't change. */
+export const STILL_WAITING_INTERVAL_MS = 30 * 1000;
+
+function formatElapsed(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+}
+
+/**
+ * Build the `onStatus` callback for `waitForDeployment`. Polling happens every
+ * second, so print the status only when it changes, plus a periodic
+ * "still waiting" line with the elapsed time.
+ */
+export function createStatusReporter(log: (message: string) => void, now: () => number): (status: string) => void {
+  const start = now();
+  let lastStatus: string | undefined;
+  let lastLogAt = start;
+  return (status: string): void => {
+    const current = now();
+    if (status !== lastStatus) {
+      lastStatus = status;
+      lastLogAt = current;
+      log(messages.getMessage('info.deploymentStatusPolled', [status]));
+    } else if (current - lastLogAt >= STILL_WAITING_INTERVAL_MS) {
+      lastLogAt = current;
+      log(messages.getMessage('info.deploymentStillWaiting', [status, formatElapsed(current - start)]));
+    }
+  };
+}
+
 /**
  * Native TypeScript port of `deploy_full` + the `deploy` command in
  * `datacustomcode/cli.py`. Preserves the original ordering: validate config
@@ -753,6 +785,8 @@ export class NativeDeployer {
       );
     }
 
+    log(messages.getMessage('info.cpuSize', [opts.cpuSize]));
+
     const baseDir = findBaseDirectory(opts.packageDir);
     const packageType = await getPackageType(baseDir);
 
@@ -767,13 +801,14 @@ export class NativeDeployer {
       log
     );
 
+    let functionFeature: string | undefined;
     if (packageType === 'function') {
       const entrypointPath = path.join(opts.packageDir, ENTRYPOINT_FILE);
       const feature = await inferUseInFeature(entrypointPath);
       if (!feature) {
         throw new SfError(messages.getMessage('error.functionSignatureMismatch'), 'FunctionSignatureMismatch');
       }
-      log(messages.getMessage('info.inferredFeature', [feature]));
+      functionFeature = feature;
       metadata.functionInvokeOptions = [USE_IN_FEATURE_MAPPING_FOR_CONNECT_API[feature] ?? feature];
     }
 
@@ -781,8 +816,32 @@ export class NativeDeployer {
     const config = await getConfig(opts.packageDir, packageType);
 
     // Mirror of `deploy_full`: a config with `streamingSource` deploys as a streaming transform.
-    if (packageType === 'script' && (config as DataTransformConfig).streamingSource && !metadata.invokeOptions) {
+    const streamingSource = packageType === 'script' ? (config as DataTransformConfig).streamingSource : undefined;
+    if (streamingSource && !metadata.invokeOptions) {
       metadata.invokeOptions = [SCRIPT_USE_IN_FEATURE_STREAMING];
+    }
+
+    if (functionFeature) {
+      log(
+        messages.getMessage('info.deploymentType', [
+          functionFeature,
+          messages.getMessage('info.deploymentTypeReason.function'),
+        ])
+      );
+    } else if (streamingSource) {
+      log(
+        messages.getMessage('info.deploymentType', [
+          SCRIPT_USE_IN_FEATURE_STREAMING,
+          messages.getMessage('info.deploymentTypeReason.streaming', [streamingSource.type, streamingSource.name]),
+        ])
+      );
+    } else {
+      log(
+        messages.getMessage('info.deploymentType', [
+          SCRIPT_USE_IN_FEATURE_BATCH,
+          messages.getMessage('info.deploymentTypeReason.batch'),
+        ])
+      );
     }
 
     const deps = buildDefaultDeps(opts.connection, overrides);
@@ -797,9 +856,10 @@ export class NativeDeployer {
     await deps.uploadZip(deployment.fileUploadUrl, path.resolve(ZIP_FILE_NAME));
 
     log(messages.getMessage('info.waitingForDeployment'));
-    const status = await waitForDeployment(metadata.name, deps, (s) =>
-      log(messages.getMessage('info.deploymentStatusPolled', [s]))
-    );
+    if (packageType === 'script') {
+      log(messages.getMessage('info.waitingForDeploymentScriptNote'));
+    }
+    const status = await waitForDeployment(metadata.name, deps, createStatusReporter(log, deps.now));
 
     if (packageType === 'script') {
       log(messages.getMessage('info.creatingDataTransform'));

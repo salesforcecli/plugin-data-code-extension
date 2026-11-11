@@ -26,6 +26,8 @@ import {
   buildDataTransformBody,
   getConfig,
   waitForDeployment,
+  createStatusReporter,
+  STILL_WAITING_INTERVAL_MS,
   htmlUnescape,
   COMPUTE_TYPES,
   NativeDeployer,
@@ -540,6 +542,63 @@ describe('nativeDeploy.waitForDeployment', () => {
   });
 });
 
+describe('nativeDeploy.createStatusReporter', () => {
+  it('logs a status only when it changes', () => {
+    const logs: string[] = [];
+    const report = createStatusReporter(
+      (m) => logs.push(m),
+      () => 0
+    );
+    for (const s of ['Initializing', 'Initializing', 'Initializing', 'Extracting', 'Extracting', 'Deployed']) report(s);
+    expect(logs).to.deep.equal([
+      'Deployment status: Initializing',
+      'Deployment status: Extracting',
+      'Deployment status: Deployed',
+    ]);
+  });
+
+  it('logs a periodic "still waiting" line with the elapsed time while the status is unchanged', () => {
+    const logs: string[] = [];
+    let t = 0;
+    const report = createStatusReporter(
+      (m) => logs.push(m),
+      () => t
+    );
+    report('Initializing'); // t=0
+    for (t = 1000; t < STILL_WAITING_INTERVAL_MS; t += 1000) report('Initializing');
+    t = STILL_WAITING_INTERVAL_MS;
+    report('Initializing');
+    t = STILL_WAITING_INTERVAL_MS * 2 + 15_000;
+    report('Initializing');
+    expect(logs).to.deep.equal([
+      'Deployment status: Initializing',
+      'Still waiting (status: Initializing, 30s elapsed)...',
+      'Still waiting (status: Initializing, 1m 15s elapsed)...',
+    ]);
+  });
+
+  it('restarts the "still waiting" interval after a status change', () => {
+    const logs: string[] = [];
+    let t = 0;
+    const report = createStatusReporter(
+      (m) => logs.push(m),
+      () => t
+    );
+    report('Initializing');
+    t = 20_000;
+    report('Extracting');
+    t = 40_000; // only 20s since the last line
+    report('Extracting');
+    t = 50_000;
+    report('Extracting');
+    expect(logs).to.deep.equal([
+      'Deployment status: Initializing',
+      'Deployment status: Extracting',
+      'Still waiting (status: Extracting, 50s elapsed)...',
+    ]);
+  });
+});
+
 describe('nativeDeploy.NativeDeployer.deploy', () => {
   const dummyConnection = {} as unknown as Connection;
 
@@ -700,6 +759,94 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
       await fs.rm(dir, { recursive: true, force: true });
     });
   }
+
+  describe('deploy output', () => {
+    async function deployLogs(
+      pkg: PackageOptions,
+      cpuSize = 'CPU_L',
+      overrides: Partial<NativeDeployDeps> = {}
+    ): Promise<string[]> {
+      const { dir, packageDir } = await makePackage(pkg);
+      const { deps } = recordingDeps(overrides);
+      const logs: string[] = [];
+      try {
+        await NativeDeployer.deploy(
+          {
+            name: 'pkg',
+            version: '1',
+            description: 'd',
+            packageDir,
+            cpuSize,
+            connection: dummyConnection,
+            log: (m) => logs.push(m),
+          },
+          deps
+        );
+      } finally {
+        await fs.rm(dir, { recursive: true, force: true });
+      }
+      return logs;
+    }
+
+    it('logs a batch transform deployment type', async () => {
+      const logs = await deployLogs({ packageType: 'script', config: SCRIPT_DLO_CONFIG });
+      expect(logs).to.include('Deployment type: BatchTransform (config.json has no streamingSource)');
+    });
+
+    it('logs a streaming transform deployment type with its source', async () => {
+      const logs = await deployLogs({ packageType: 'script', config: SCRIPT_STREAMING_CONFIG });
+      expect(logs).to.include('Deployment type: StreamingTransform (config.json streamingSource: dlo Account__dll)');
+    });
+
+    it('logs a function deployment type with the inferred feature', async () => {
+      const logs = await deployLogs({
+        packageType: 'function',
+        config: { entryPoint: 'entrypoint.py' },
+        entrypoint: CHUNKING_ENTRYPOINT,
+      });
+      expect(logs).to.include('Deployment type: SearchIndexChunking (inferred from the entrypoint signature)');
+    });
+
+    it('logs the deployment type before creating the deployment', async () => {
+      const logs = await deployLogs({ packageType: 'script', config: SCRIPT_DLO_CONFIG });
+      const typeIdx = logs.findIndex((m) => m.startsWith('Deployment type:'));
+      const createIdx = logs.findIndex((m) => m.startsWith('Creating deployment'));
+      expect(typeIdx).to.be.greaterThan(-1);
+      expect(typeIdx).to.be.lessThan(createIdx);
+    });
+
+    it('logs the selected CPU size without the compute type it maps to', async () => {
+      const logs = await deployLogs({ packageType: 'script', config: SCRIPT_DLO_CONFIG }, 'CPU_L');
+      expect(logs).to.include('CPU size: CPU_L');
+      expect(logs.join('\n')).to.not.include('CPU_XS');
+    });
+
+    it('warns that stopping early skips the data transform for scripts only', async () => {
+      const scriptLogs = await deployLogs({ packageType: 'script', config: SCRIPT_DLO_CONFIG });
+      expect(scriptLogs.join('\n')).to.include('Package extraction can take several minutes');
+      expect(scriptLogs.join('\n')).to.include("Stopping this command doesn't cancel the deployment");
+
+      const fnLogs = await deployLogs({
+        packageType: 'function',
+        config: { entryPoint: 'entrypoint.py' },
+        entrypoint: CHUNKING_ENTRYPOINT,
+      });
+      expect(fnLogs.join('\n')).to.include('Package extraction can take several minutes');
+      expect(fnLogs.join('\n')).to.not.include('data transform');
+    });
+
+    it('logs polled statuses only when they change', async () => {
+      const statuses = ['Initializing', 'Initializing', 'Initializing', 'Deployed'];
+      let i = 0;
+      const logs = await deployLogs({ packageType: 'script', config: SCRIPT_DLO_CONFIG }, 'CPU_L', {
+        getDeploymentStatus: async () => statuses[i++],
+      });
+      expect(logs.filter((m) => m.startsWith('Deployment status:'))).to.deep.equal([
+        'Deployment status: Initializing',
+        'Deployment status: Deployed',
+      ]);
+    });
+  });
 
   it('infers the feature for a function package and skips the data transform', async () => {
     const { dir, packageDir } = await makePackage({

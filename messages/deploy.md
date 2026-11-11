@@ -156,9 +156,25 @@ The --%s flag value exceeds the maximum length of %s characters (%s provided).
 
 API name '%s' was sanitized to '%s'.
 
-# info.inferredFeature
+# info.deploymentType
 
-Inferred feature: %s
+Deployment type: %s (%s)
+
+# info.deploymentTypeReason.batch
+
+config.json has no streamingSource
+
+# info.deploymentTypeReason.streaming
+
+config.json streamingSource: %s %s
+
+# info.deploymentTypeReason.function
+
+inferred from the entrypoint signature
+
+# info.cpuSize
+
+CPU size: %s
 
 # info.creatingDeployment
 
@@ -174,7 +190,15 @@ Uploading deployment package...
 
 # info.waitingForDeployment
 
-Waiting for deployment to complete...
+Waiting for deployment to complete. Package extraction can take several minutes.
+
+# info.waitingForDeploymentScriptNote
+
+Stopping this command doesn't cancel the deployment, but the data transform is only created after the deployment finishes. If you stop early, the data transform is not created.
+
+# info.deploymentStillWaiting
+
+Still waiting (status: %s, %s elapsed)...
 
 # info.deploymentStatusPolled
 
