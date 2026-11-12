@@ -24,6 +24,7 @@ import {
   findBaseDirectory,
   getPackageType,
   fileIsStreaming,
+  findIgnoredBatchObjects,
   isStreamingSourceNameMissing,
   scanFile,
   scanFileForImports,
@@ -126,6 +127,26 @@ describe('nativeScan: scanFileStreaming', () => {
       await fs.rm(tmp, { recursive: true, force: true });
     });
   }
+});
+
+describe('nativeScan: findIgnoredBatchObjects', () => {
+  it('is empty for the streaming template shape (unnamed read_dlo) and for batch-only files', async () => {
+    const streaming = await writeEntrypoint(STREAMING_ENTRYPOINT);
+    const batch = await writeEntrypoint('c.read_dlo("In__dll")\nc.write_to_dlo("Out__dll", df)\n');
+    expect(await findIgnoredBatchObjects(streaming.file)).to.deep.equal([]);
+    expect(await findIgnoredBatchObjects(batch.file)).to.deep.equal([]);
+    await fs.rm(streaming.tmp, { recursive: true, force: true });
+    await fs.rm(batch.tmp, { recursive: true, force: true });
+  });
+
+  it('lists named batch reads and writes in a streaming file', async () => {
+    const { tmp, file } = await writeEntrypoint(
+      STREAMING_ENTRYPOINT.replace('client.read_dlo()', 'client.read_dlo("B__dll")') +
+        'def helper(c, df):\n    c.write_to_dlo("A__dll", df)\n'
+    );
+    expect(await findIgnoredBatchObjects(file)).to.deep.equal(['A__dll', 'B__dll']);
+    await fs.rm(tmp, { recursive: true, force: true });
+  });
 });
 
 describe('nativeScan: isStreamingSourceNameMissing', () => {
@@ -480,7 +501,7 @@ describe('nativeScan: updateConfig', () => {
       entrypoint: STREAMING_ENTRYPOINT,
       config: {
         dataspace: 'default',
-        streamingSource: { type: 'dmo', name: 'Account__dll' },
+        streamingSource: { type: 'dlo', name: 'Account__dll' },
         permissions: { read: { dlo: ['Stale__dll'] }, write: { dlo: ['Stale__dll'] } },
       },
     });
@@ -490,6 +511,21 @@ describe('nativeScan: updateConfig', () => {
       read: { dlo: ['Account__dll'] },
       write: { dlo: ['Account_std_copy__dll'] },
     });
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('clears streamingSource.name when the scanned read layer no longer matches its type', async () => {
+    const dir = await makePackage({
+      entrypoint: STREAMING_ENTRYPOINT.replace('read_dlo_deltas', 'read_dmo_deltas').replace(
+        'write_dlo_deltas',
+        'write_dmo_deltas'
+      ),
+      config: { dataspace: 'default', streamingSource: { type: 'dlo', name: 'Orders__dll' } },
+    });
+    const cfg = await updateConfig(path.join(dir, 'payload', 'entrypoint.py'), 'script');
+    expect(cfg.streamingSource).to.deep.equal({ type: 'dmo', name: '' });
+    expect(isStreamingSourceNameMissing(cfg)).to.equal(true);
+    expect(cfg.permissions).to.deep.equal({ read: { dmo: [] }, write: { dmo: ['Account_std_copy__dll'] } });
     await fs.rm(dir, { recursive: true, force: true });
   });
 

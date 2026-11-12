@@ -16,7 +16,12 @@
 import path from 'node:path';
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages, SfError } from '@salesforce/core';
-import { executeNativeScan, isStreamingSourceNameMissing, type NativeScanResult } from '../utils/nativeScan.js';
+import {
+  executeNativeScan,
+  findIgnoredBatchObjects,
+  isStreamingSourceNameMissing,
+  type NativeScanResult,
+} from '../utils/nativeScan.js';
 import { checkEnvironment, type EnvironmentCheckResult } from '../utils/environmentChecker.js';
 import {
   countEntriesReferencing,
@@ -73,6 +78,11 @@ export abstract class ScanBase extends SfCommand<ScanResult> {
 
       if (codeType === 'script' && isStreamingSourceNameMissing(executionResult.config)) {
         this.warn(messages.getMessage('warning.streamingSourceNameEmpty'));
+      }
+
+      if (codeType === 'script') {
+        const ignored = await findIgnoredBatchObjects(executionResult.entrypoint);
+        if (ignored.length > 0) this.warn(messages.getMessage('warning.ignoredBatchObjects', [ignored.join(', ')]));
       }
 
       if (codeType === 'script' && executionResult.dryRun) {

@@ -20,7 +20,7 @@ import { debuglog } from 'node:util';
 import { Messages, SfError, type Connection } from '@salesforce/core';
 import { decodeHTML } from 'entities';
 import { SCRIPT_USE_IN_FEATURE_BATCH, SCRIPT_USE_IN_FEATURE_STREAMING } from './constants.js';
-import { findBaseDirectory, getPackageType, type CodeType } from './nativeScan.js';
+import { fileIsStreaming, findBaseDirectory, getPackageType, type CodeType } from './nativeScan.js';
 import { zipWithSfError, ZIP_FILE_NAME, type ZipResult } from './zipBuilder.js';
 
 const debug = debuglog('datacustomcode');
@@ -130,6 +130,8 @@ export type NativeDeployOptions = {
   /** Authenticated org connection used for the Data Cloud REST calls. */
   connection: Connection;
   log?: (message: string) => void;
+  /** Non-fatal problems the user should see. Defaults to `log`. */
+  warn?: (message: string) => void;
 };
 
 export type NativeDeployResult = {
@@ -789,6 +791,16 @@ export function createStatusReporter(log: (message: string) => void, now: () => 
   };
 }
 
+/** `fileIsStreaming`, treating a missing entrypoint as not streaming (the zip step reports it). */
+async function entrypointIsStreaming(entrypointPath: string): Promise<boolean> {
+  try {
+    return await fileIsStreaming(entrypointPath);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return false;
+    throw err;
+  }
+}
+
 /**
  * Native TypeScript port of `deploy_full` + the `deploy` command in
  * `datacustomcode/cli.py`. Preserves the original ordering: validate config
@@ -804,6 +816,7 @@ export class NativeDeployer {
     overrides: Partial<NativeDeployDeps> = {}
   ): Promise<NativeDeployResult> {
     const log = opts.log ?? ((): void => {});
+    const warn = opts.warn ?? log;
 
     const computeType = COMPUTE_TYPES[opts.cpuSize];
     if (!computeType) {
@@ -847,6 +860,15 @@ export class NativeDeployer {
     const streamingSource = packageType === 'script' ? (config as DataTransformConfig).streamingSource : undefined;
     if (streamingSource && !metadata.invokeOptions) {
       metadata.invokeOptions = [SCRIPT_USE_IN_FEATURE_STREAMING];
+    }
+    // Not in `deploy_full`: a delta-API entrypoint with a stale or hand-edited config (no
+    // streamingSource) would otherwise go out as BATCH and only break at runtime. Warn
+    // rather than fail, since a batch run can legitimately skip the delta branch.
+    if (packageType === 'script' && !streamingSource) {
+      const entryPoint = (config as DataTransformConfig).entryPoint || ENTRYPOINT_FILE;
+      if (await entrypointIsStreaming(path.join(opts.packageDir, entryPoint))) {
+        warn(messages.getMessage('warning.streamingEntrypointBatchConfig', [entryPoint]));
+      }
     }
 
     if (functionFeature) {

@@ -8,6 +8,10 @@ Could not locate the datacustomcode init template at '%s'.
 - Run 'pip show salesforce-data-customcode' to confirm the install location
 - Reinstall with 'pip install --upgrade salesforce-data-customcode' if the templates directory is missing
 
+# error.initRunConfigInvalid
+
+The datacustomcode run config at '%s' is not valid YAML: %s
+
 # error.initStreamingTemplateNotFound
 
 The installed salesforce-data-customcode package (version %s) doesn't include the streaming template at '%s'. StreamingTransform needs version 7.0.0 or later.

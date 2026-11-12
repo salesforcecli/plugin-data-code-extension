@@ -15,10 +15,12 @@
  */
 import { promises as fs, accessSync } from 'node:fs';
 import path from 'node:path';
+import { debuglog } from 'node:util';
 import { Messages, SfError } from '@salesforce/core';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'datacodeBinaryExecutor');
+const debug = debuglog('datacustomcode');
 
 export type CodeType = 'script' | 'function';
 
@@ -196,6 +198,18 @@ export async function scanFileStreaming(filePath: string): Promise<StreamingData
 /** Mirror of `datacustomcode/scan.py:file_is_streaming`: true when any delta method is called. */
 export async function fileIsStreaming(filePath: string): Promise<boolean> {
   return isStreaming((await visitFile(filePath)).streaming);
+}
+
+/**
+ * DLO/DMO names from batch calls (`read_dlo`, `write_to_dlo`, ...) in a file that also
+ * makes delta calls. Such a file is scanned as streaming, so these names never reach
+ * the permissions; callers warn. Empty when the file is not streaming. Batch calls
+ * without a resolvable name (like the streaming template's `read_dlo()`) don't count.
+ */
+export async function findIgnoredBatchObjects(filePath: string): Promise<string[]> {
+  const { batch, streaming } = await visitFile(filePath);
+  if (!isStreaming(streaming)) return [];
+  return [...new Set([...batch.readDlo, ...batch.readDmo, ...batch.writeToDlo, ...batch.writeToDmo])].sort();
 }
 
 function isStreaming(calls: StreamingDataAccessLayerCalls): boolean {
@@ -534,12 +548,19 @@ export async function updateConfig(
  * Mirror of `datacustomcode/scan.py:_update_streaming_config`. The streaming read source
  * cannot be inferred from `read_*_deltas()`, so `streamingSource.name` is kept from the
  * existing config and is the only read permission; writes come from the scan.
+ *
+ * Unlike the SDK, the name is cleared when the scanned read layer differs from the
+ * existing `streamingSource.type` (e.g. `read_dlo_deltas()` switched to
+ * `read_dmo_deltas()`): a DLO name is not a valid DMO source, and an empty name makes
+ * scan warn and deploy fail instead of shipping the mismatch.
  */
 function updateStreamingConfig(existing: Record<string, unknown>, calls: StreamingDataAccessLayerCalls): void {
   validateStreamingAccessLayer(calls);
   const readLayer = streamingReadLayer(calls);
   const source = existing.streamingSource;
-  const name = isPlainObject(source) && typeof source.name === 'string' ? source.name : '';
+  const layerChanged = isPlainObject(source) && source.type !== undefined && source.type !== readLayer;
+  if (layerChanged) debug('streamingSource.type changed %s -> %s; clearing name', String(source.type), readLayer);
+  const name = !layerChanged && isPlainObject(source) && typeof source.name === 'string' ? source.name : '';
   const streamingSource: StreamingSource = { type: readLayer, name };
   existing.streamingSource = streamingSource;
   existing.permissions = {

@@ -817,6 +817,64 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
     await fs.rm(dir, { recursive: true, force: true });
   });
 
+  it('warns but still deploys BATCH when a delta-API entrypoint has no streamingSource', async () => {
+    const { dir, packageDir } = await makePackage({
+      packageType: 'script',
+      config: SCRIPT_DLO_CONFIG,
+      entrypoint: 'df = client.read_dlo_deltas()\nclient.write_dlo_deltas("Result__dll", df)\n',
+    });
+    const { deps, createdMetadata, dataTransformBodies } = recordingDeps();
+    const warnings: string[] = [];
+
+    await NativeDeployer.deploy(
+      {
+        name: 'my_batch',
+        version: '1',
+        description: 'd',
+        packageDir,
+        cpuSize: 'CPU_L',
+        connection: dummyConnection,
+        warn: (m) => warnings.push(m),
+      },
+      deps
+    );
+
+    expect(warnings).to.have.length(1);
+    expect(warnings[0]).to.include('entrypoint.py').and.include('no streamingSource');
+    expect(createdMetadata[0].invokeOptions).to.equal(undefined);
+    expect((dataTransformBodies[0] as Record<string, unknown>).type).to.equal('BATCH');
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('does not warn for a batch-only entrypoint, a streaming config, or a missing entrypoint', async () => {
+    const cases = [
+      { config: SCRIPT_DLO_CONFIG, entrypoint: 'df = client.read_dlo("Account__dll")\n' },
+      { config: SCRIPT_STREAMING_CONFIG, entrypoint: 'df = client.read_dlo_deltas()\n' },
+      { config: { ...SCRIPT_DLO_CONFIG, entryPoint: 'missing.py' }, entrypoint: 'df = client.read_dlo_deltas()\n' },
+    ];
+    for (const { config, entrypoint } of cases) {
+      // eslint-disable-next-line no-await-in-loop
+      const { dir, packageDir } = await makePackage({ packageType: 'script', config, entrypoint });
+      const warnings: string[] = [];
+      // eslint-disable-next-line no-await-in-loop
+      await NativeDeployer.deploy(
+        {
+          name: 'n',
+          version: '1',
+          description: 'd',
+          packageDir,
+          cpuSize: 'CPU_L',
+          connection: dummyConnection,
+          warn: (m) => warnings.push(m),
+        },
+        recordingDeps().deps
+      );
+      expect(warnings).to.deep.equal([]);
+      // eslint-disable-next-line no-await-in-loop
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
   for (const [label, config, expectedPath, expectedInvokeOptions] of [
     ['batch', SCRIPT_DLO_CONFIG, '/services/data/v63.0/ssot/data-custom-code', undefined],
     ['streaming', SCRIPT_STREAMING_CONFIG, '/services/data/v67.0/ssot/data-custom-code', ['StreamingTransform']],

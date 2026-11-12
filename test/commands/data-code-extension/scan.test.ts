@@ -249,6 +249,21 @@ describe('data-code-extension scan commands', () => {
           .join('\n')
       ).to.include('streamingSource.name is empty');
     });
+
+    it('warns about named batch calls the streaming scan leaves out of permissions', async () => {
+      makeScriptPackage(streamingCode + '    c.write_to_dlo("Other__dll", df)\n', {
+        dataspace: 'default',
+        streamingSource: { type: 'dlo', name: 'Source__dll' },
+      });
+
+      await ScriptScan.run(['--dry-run']);
+
+      const warnings = sfCommandStubs.warn
+        .getCalls()
+        .map((call) => call.args[0] as string)
+        .join('\n');
+      expect(warnings).to.include('left out of permissions').and.include('Other__dll');
+    });
   });
 
   describe('function scan', () => {

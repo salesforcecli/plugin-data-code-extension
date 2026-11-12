@@ -244,6 +244,41 @@ describe('executeNativeInit', () => {
     }
   });
 
+  it('fails before copying anything when the SDK config.yaml is missing', async () => {
+    await fs.rm(path.join(pythonPackageLocation, 'datacustomcode', 'config.yaml'));
+    const packageDir = path.join(workdir, 'my-stream');
+    const err = await expectInitError({
+      codeType: 'script',
+      packageDir,
+      pythonPackageLocation,
+      pythonPackageVersion: '7.0.0',
+      useInFeature: 'StreamingTransform',
+    });
+    expect(err.name).to.equal('InitTemplateNotFound');
+    expect(err.message).to.include(path.join('datacustomcode', 'config.yaml'));
+    await expectMissing(packageDir);
+  });
+
+  for (const [label, yaml] of [
+    ['malformed', 'reader_config:\n  type_config_name: [unclosed\n'],
+    ['not a mapping', '- just\n- a list\n'],
+  ]) {
+    it(`fails before copying anything when the SDK config.yaml is ${label}`, async () => {
+      await fs.writeFile(path.join(pythonPackageLocation, 'datacustomcode', 'config.yaml'), yaml);
+      const packageDir = path.join(workdir, 'my-stream');
+      const err = await expectInitError({
+        codeType: 'script',
+        packageDir,
+        pythonPackageLocation,
+        pythonPackageVersion: '7.0.0',
+        useInFeature: 'StreamingTransform',
+      });
+      expect(err.name).to.equal('InitRunConfigInvalid');
+      expect(err.message).to.include(path.join('datacustomcode', 'config.yaml'));
+      await expectMissing(packageDir);
+    });
+  }
+
   it('reports a missing template, not an old SDK, when a 7.x SDK lacks the streaming template', async () => {
     const brokenSdk = await buildFakePythonPackage({ streaming: false });
     const packageDir = path.join(workdir, 'my-stream-7');

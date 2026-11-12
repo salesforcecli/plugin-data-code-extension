@@ -245,6 +245,10 @@ config.json at %s is missing required fields: %s.
 
 config.json at %s is invalid: %s.
 
+# warning.streamingEntrypointBatchConfig
+
+%s calls the streaming delta APIs (read_dlo_deltas, write_dlo_deltas, ...), but config.json has no streamingSource, so this deploys as a BatchTransform. If this is meant to be a streaming transform, run 'sf data-code-extension script scan' and set streamingSource.name, then deploy again.
+
 # error.streamingSourceNameEmpty
 
 streamingSource.name is empty in config.json at %s. A streaming transform needs the DLO or DMO it reads from.

@@ -17,7 +17,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { debuglog } from 'node:util';
 import { Messages, SfError } from '@salesforce/core';
-import { parseDocument } from 'yaml';
+import { isMap, parseDocument } from 'yaml';
 import {
   SCRIPT_USE_IN_FEATURE_BATCH,
   SCRIPT_USE_IN_FEATURE_OPTIONS,
@@ -87,15 +87,22 @@ export async function executeNativeInit(opts: NativeInitOptions): Promise<Native
   // 1. Copy template
   if (codeType === 'script') {
     const scriptTemplateDir = path.join(templatesDir, 'script');
-    // Check before copying anything so an older SDK leaves no half-initialized package.
-    if (streaming) await ensureStreamingTemplateExists(scriptTemplateDir, pythonPackageVersion);
-    await copyScriptTemplate(scriptTemplateDir, packageDir);
+    // Check (and load the run config) before copying anything, so an older SDK or a
+    // missing/malformed SDK config.yaml leaves no half-initialized package.
+    let streamingRunConfig: string | undefined;
     if (streaming) {
+      await ensureStreamingTemplateExists(scriptTemplateDir, pythonPackageVersion);
+      streamingRunConfig = await buildStreamingRunConfig(path.join(sdkDir, SDK_RUN_CONFIG_FILE));
+    }
+    await copyScriptTemplate(scriptTemplateDir, packageDir);
+    if (streamingRunConfig !== undefined) {
       await fs.copyFile(
         path.join(scriptTemplateDir, STREAMING_EXAMPLE_ENTRYPOINT),
         path.join(packageDir, PAYLOAD_DIR, ENTRYPOINT_FILE)
       );
-      await writeStreamingRunConfig(path.join(sdkDir, SDK_RUN_CONFIG_FILE), path.join(packageDir, SDK_RUN_CONFIG_FILE));
+      const runConfigPath = path.join(packageDir, SDK_RUN_CONFIG_FILE);
+      debug('streaming run config: %s', runConfigPath);
+      await fs.writeFile(runConfigPath, streamingRunConfig, 'utf8');
     }
   } else {
     await copyFunctionTemplate(path.join(templatesDir, 'function'), packageDir, useInFeature);
@@ -156,16 +163,38 @@ async function ensureStreamingTemplateExists(scriptTemplateDir: string, sdkVersi
 }
 
 /**
- * Mirror of `datacustomcode/template.py:_write_streaming_config_yaml`: copy the SDK's
+ * Mirror of `datacustomcode/template.py:_write_streaming_config_yaml`: the SDK's
  * config.yaml with the reader/writer switched to the local delta implementations. Edited
- * as a YAML document so comments and formatting in the SDK file are kept.
+ * as a YAML document so comments and formatting in the SDK file are kept. Returns the
+ * new file content; throws when the SDK file is missing or is not a valid YAML mapping.
  */
-async function writeStreamingRunConfig(sourcePath: string, destinationPath: string): Promise<void> {
-  const doc = parseDocument(await fs.readFile(sourcePath, 'utf8'));
+async function buildStreamingRunConfig(sourcePath: string): Promise<string> {
+  let raw: string;
+  try {
+    raw = await fs.readFile(sourcePath, 'utf8');
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new SfError(
+        messages.getMessage('error.initTemplateNotFound', [sourcePath]),
+        'InitTemplateNotFound',
+        messages.getMessages('actions.initTemplateNotFound')
+      );
+    }
+    throw err;
+  }
+  // parseDocument collects problems in doc.errors instead of throwing.
+  const doc = parseDocument(raw);
+  if (doc.errors.length > 0 || !isMap(doc.contents)) {
+    const reason = doc.errors[0]?.message ?? 'expected a YAML mapping at the top level';
+    throw new SfError(
+      messages.getMessage('error.initRunConfigInvalid', [sourcePath, reason]),
+      'InitRunConfigInvalid',
+      messages.getMessages('actions.initTemplateNotFound')
+    );
+  }
   doc.setIn(['reader_config', 'type_config_name'], 'LocalDeltasReader');
   doc.setIn(['writer_config', 'type_config_name'], 'LocalDeltasWriter');
-  debug('streaming run config: %s -> %s', sourcePath, destinationPath);
-  await fs.writeFile(destinationPath, doc.toString(), 'utf8');
+  return doc.toString();
 }
 
 async function copyTemplateEntries(

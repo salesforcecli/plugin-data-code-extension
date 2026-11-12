@@ -121,6 +121,10 @@ dataLineage references objects that are no longer in permissions (%s entries aff
 
 streamingSource.name is empty in config.json. A streaming transform must declare its read source; set streamingSource.name to the DLO or DMO the transform reads from, then scan again.
 
+# warning.ignoredBatchObjects
+
+The entrypoint calls the streaming delta APIs, so it was scanned as a streaming transform and these batch read/write objects were left out of permissions: %s. Ignore this if the batch calls only run outside DELTA_SYNC mode; otherwise use the delta APIs for them.
+
 # prompt.staleLineage
 
 Write the updated permissions to config.json anyway?
