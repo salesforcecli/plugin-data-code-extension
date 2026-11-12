@@ -26,6 +26,9 @@ import { executeNativeInit } from '../../src/utils/nativeInit.js';
 // without depending on the installed Python package, each test builds a fake
 // package layout in a temp dir and points init at it.
 
+// Sample request shipped in the chunking template; init must copy it verbatim.
+const TEMPLATE_TEST_JSON = { input: [{ text: 'sample text from template' }] };
+
 type FakePackageOptions = {
   scriptEntrypoint?: string;
   scriptConfig?: Record<string, unknown>;
@@ -83,6 +86,8 @@ async function buildFakePythonPackage(opts: FakePackageOptions = {}): Promise<st
   await fs.mkdir(chunkingPayload, { recursive: true });
   await fs.writeFile(path.join(chunkingPayload, 'entrypoint.py'), '# chunking entrypoint\n');
   await fs.writeFile(path.join(chunkingPayload, 'config.json'), '{}');
+  await fs.mkdir(path.join(chunkingPayload, 'tests'), { recursive: true });
+  await fs.writeFile(path.join(chunkingPayload, 'tests', 'test.json'), JSON.stringify(TEMPLATE_TEST_JSON, null, 2));
 
   return root;
 }
@@ -113,7 +118,6 @@ describe('executeNativeInit', () => {
 
     expect(result.filesCreated).to.deep.equal([packageDir]);
     expect(result.configPath).to.equal(path.join(packageDir, 'payload', 'config.json'));
-    expect(result.testJsonPath).to.be.undefined;
 
     const sdkConfig = JSON.parse(
       await fs.readFile(path.join(packageDir, '.datacustomcode_proj', 'sdk_config.json'), 'utf8')
@@ -211,7 +215,6 @@ describe('executeNativeInit', () => {
     });
 
     expect(result.filesCreated).to.deep.equal([packageDir]);
-    expect(result.testJsonPath).to.equal(path.join(packageDir, 'payload', 'tests', 'test.json'));
 
     const sdkConfig = JSON.parse(
       await fs.readFile(path.join(packageDir, '.datacustomcode_proj', 'sdk_config.json'), 'utf8')
@@ -228,13 +231,11 @@ describe('executeNativeInit', () => {
     const entrypoint = await fs.readFile(path.join(packageDir, 'payload', 'entrypoint.py'), 'utf8');
     expect(entrypoint).to.include('chunking entrypoint');
 
-    // tests/test.json should be a structured sample for SearchIndexChunking.
-    const sample = JSON.parse(await fs.readFile(result.testJsonPath!, 'utf8')) as {
-      input: Array<{ text: string; metadata?: { type?: string } }>;
-    };
-    expect(sample.input).to.be.an('array').with.length(1);
-    expect(sample.input[0].text).to.be.a('string').with.length.greaterThan(0);
-    expect(sample.input[0].metadata?.type).to.equal('text');
+    // tests/test.json is copied verbatim from the template, not regenerated.
+    const copied = JSON.parse(
+      await fs.readFile(path.join(packageDir, 'payload', 'tests', 'test.json'), 'utf8')
+    ) as unknown;
+    expect(copied).to.deep.equal(TEMPLATE_TEST_JSON);
   });
 
   it('does not write test.json for an unknown feature', async () => {
@@ -248,7 +249,7 @@ describe('executeNativeInit', () => {
       useInFeature: 'UnknownFeature',
     });
 
-    expect(result.testJsonPath).to.be.undefined;
+    expect(result.filesCreated).to.deep.equal([packageDir]);
     let testsDirExists = true;
     try {
       await fs.access(path.join(packageDir, 'payload', 'tests'));
@@ -269,7 +270,7 @@ describe('executeNativeInit', () => {
       // useInFeature intentionally omitted
     });
 
-    expect(result.testJsonPath).to.be.undefined;
+    expect(result.filesCreated).to.deep.equal([packageDir]);
     // Base function entrypoint copied (no chunking overlay).
     const entrypoint = await fs.readFile(path.join(packageDir, 'payload', 'entrypoint.py'), 'utf8');
     expect(entrypoint).to.include('def function(request, runtime: Runtime)');
@@ -294,10 +295,16 @@ describe('executeNativeInit', () => {
       useInFeature: 'SearchIndexChunking',
     });
 
-    // Init should succeed using only the base function template; test.json is still
-    // sample-driven (not template-driven), so it gets written.
+    // Init should succeed using only the base function template. No template ships a
+    // tests/test.json here, and init must not invent one.
     expect(result.filesCreated).to.deep.equal([packageDir]);
-    expect(result.testJsonPath).to.equal(path.join(packageDir, 'payload', 'tests', 'test.json'));
+    let testJsonExists = true;
+    try {
+      await fs.access(path.join(packageDir, 'payload', 'tests', 'test.json'));
+    } catch {
+      testJsonExists = false;
+    }
+    expect(testJsonExists).to.be.false;
     await fs.rm(customPkg, { recursive: true, force: true });
   });
 
