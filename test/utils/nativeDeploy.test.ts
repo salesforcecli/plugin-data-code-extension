@@ -26,6 +26,8 @@ import {
   buildDataTransformBody,
   getConfig,
   waitForDeployment,
+  createStatusReporter,
+  STILL_WAITING_INTERVAL_MS,
   htmlUnescape,
   COMPUTE_TYPES,
   NativeDeployer,
@@ -48,6 +50,11 @@ const SCRIPT_DLO_CONFIG = {
   sdkVersion: '1.0.0',
   dataspace: 'my_space',
   permissions: { read: { dlo: ['Account__dll'] }, write: { dlo: ['Result__dll'] } },
+};
+
+const SCRIPT_STREAMING_CONFIG = {
+  ...SCRIPT_DLO_CONFIG,
+  streamingSource: { type: 'dlo', name: 'Account__dll' },
 };
 
 /** Await a promise expected to reject and return the error for assertions. */
@@ -305,6 +312,17 @@ describe('nativeDeploy.buildDataTransformBody', () => {
     ]);
   });
 
+  it('marks the transform STREAMING when the config declares a streamingSource', () => {
+    const config: DataTransformConfig = {
+      entryPoint: 'entrypoint.py',
+      sdkVersion: '1.0.0',
+      dataspace: 'my_space',
+      permissions: { read: { dlo: ['Account__dll'] }, write: { dlo: ['Result__dll'] } },
+      streamingSource: { type: 'dlo', name: 'Account__dll' },
+    };
+    expect(buildDataTransformBody(metadata, config).type).to.equal('STREAMING');
+  });
+
   it('throws when a DMO transform is missing dataObjects', () => {
     const config: DataTransformConfig = {
       entryPoint: 'entrypoint.py',
@@ -324,6 +342,109 @@ describe('nativeDeploy.getConfig', () => {
     expect(config.permissions.read.dlo).to.deep.equal(['Account__dll']);
     await fs.rm(dir, { recursive: true, force: true });
   });
+
+  it('parses the optional streamingSource', async () => {
+    const { dir, packageDir } = await makePackage({ packageType: 'script', config: SCRIPT_STREAMING_CONFIG });
+    const config = (await getConfig(packageDir, 'script')) as DataTransformConfig;
+    expect(config.streamingSource).to.deep.equal({ type: 'dlo', name: 'Account__dll' });
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('leaves streamingSource unset for a batch config', async () => {
+    const { dir, packageDir } = await makePackage({ packageType: 'script', config: SCRIPT_DLO_CONFIG });
+    const config = (await getConfig(packageDir, 'script')) as DataTransformConfig;
+    expect(config).to.not.have.property('streamingSource');
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('rejects a malformed streamingSource', async () => {
+    const { dir, packageDir } = await makePackage({
+      packageType: 'script',
+      config: { ...SCRIPT_DLO_CONFIG, streamingSource: { type: 'dlo' } },
+    });
+    const err = await expectReject(getConfig(packageDir, 'script'));
+    expect(err.name).to.equal('InvalidConfig');
+    expect(err.message).to.match(/streamingSource/);
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  for (const name of ['', '   ']) {
+    it(`rejects a streamingSource with a blank name (${JSON.stringify(name)})`, async () => {
+      const { dir, packageDir } = await makePackage({
+        packageType: 'script',
+        config: { ...SCRIPT_STREAMING_CONFIG, streamingSource: { type: 'dlo', name } },
+      });
+      const err = await expectReject(getConfig(packageDir, 'script'));
+      expect(err.name).to.equal('StreamingSourceNameEmpty');
+      expect(err.message).to.include('streamingSource.name');
+      expect(err.actions?.join('\n')).to.include('scan');
+      await fs.rm(dir, { recursive: true, force: true });
+    });
+  }
+
+  it('accepts a streamingSource type case-insensitively', async () => {
+    const { dir, packageDir } = await makePackage({
+      packageType: 'script',
+      config: { ...SCRIPT_STREAMING_CONFIG, streamingSource: { type: 'DLO', name: 'Account__dll' } },
+    });
+    const config = (await getConfig(packageDir, 'script')) as DataTransformConfig;
+    expect(config.streamingSource).to.deep.equal({ type: 'DLO', name: 'Account__dll' });
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('matches the streamingSource name against the read permissions case-insensitively', async () => {
+    const { dir, packageDir } = await makePackage({
+      packageType: 'script',
+      config: {
+        ...SCRIPT_STREAMING_CONFIG,
+        streamingSource: { type: 'dlo', name: 'Account__dll' },
+        permissions: { read: { dlo: ['account__dll'] }, write: { dlo: ['Result__dll'] } },
+      },
+    });
+    const config = (await getConfig(packageDir, 'script')) as DataTransformConfig;
+    expect(config.streamingSource).to.deep.equal({ type: 'dlo', name: 'Account__dll' });
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('rejects a streamingSource with an unknown type', async () => {
+    const { dir, packageDir } = await makePackage({
+      packageType: 'script',
+      config: { ...SCRIPT_STREAMING_CONFIG, streamingSource: { type: 'table', name: 'Account__dll' } },
+    });
+    const err = await expectReject(getConfig(packageDir, 'script'));
+    expect(err.name).to.equal('StreamingSourceTypeInvalid');
+    expect(err.message).to.include("'table'");
+    expect(err.actions?.join('\n')).to.include('scan');
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  const notInReadCases: Array<{ title: string; config: Record<string, unknown> }> = [
+    {
+      title: 'the read permissions are empty',
+      config: {
+        ...SCRIPT_STREAMING_CONFIG,
+        permissions: { read: { dlo: [] }, write: { dlo: ['Result__dll'] } },
+      },
+    },
+    {
+      title: 'the name was edited after scan',
+      config: { ...SCRIPT_STREAMING_CONFIG, streamingSource: { type: 'dlo', name: 'Contact__dll' } },
+    },
+    {
+      title: 'the type does not match the read layer',
+      config: { ...SCRIPT_STREAMING_CONFIG, streamingSource: { type: 'dmo', name: 'Account__dll' } },
+    },
+  ];
+  for (const { title, config } of notInReadCases) {
+    it(`rejects a streamingSource not in the read permissions when ${title}`, async () => {
+      const { dir, packageDir } = await makePackage({ packageType: 'script', config });
+      const err = await expectReject(getConfig(packageDir, 'script'));
+      expect(err.name).to.equal('StreamingSourceNotInReadPermissions');
+      expect(err.message).to.include('permissions.read.');
+      expect(err.actions?.join('\n')).to.include('scan');
+      await fs.rm(dir, { recursive: true, force: true });
+    });
+  }
 
   it('parses the optional dataObjects schema for a DLO write config', async () => {
     const { dir, packageDir } = await makePackage({
@@ -485,6 +606,63 @@ describe('nativeDeploy.waitForDeployment', () => {
   });
 });
 
+describe('nativeDeploy.createStatusReporter', () => {
+  it('logs a status only when it changes', () => {
+    const logs: string[] = [];
+    const report = createStatusReporter(
+      (m) => logs.push(m),
+      () => 0
+    );
+    for (const s of ['Initializing', 'Initializing', 'Initializing', 'Extracting', 'Extracting', 'Deployed']) report(s);
+    expect(logs).to.deep.equal([
+      'Deployment status: Initializing',
+      'Deployment status: Extracting',
+      'Deployment status: Deployed',
+    ]);
+  });
+
+  it('logs a periodic "still waiting" line with the elapsed time while the status is unchanged', () => {
+    const logs: string[] = [];
+    let t = 0;
+    const report = createStatusReporter(
+      (m) => logs.push(m),
+      () => t
+    );
+    report('Initializing'); // t=0
+    for (t = 1000; t < STILL_WAITING_INTERVAL_MS; t += 1000) report('Initializing');
+    t = STILL_WAITING_INTERVAL_MS;
+    report('Initializing');
+    t = STILL_WAITING_INTERVAL_MS * 2 + 15_000;
+    report('Initializing');
+    expect(logs).to.deep.equal([
+      'Deployment status: Initializing',
+      'Still waiting (status: Initializing, 30s elapsed)...',
+      'Still waiting (status: Initializing, 1m 15s elapsed)...',
+    ]);
+  });
+
+  it('restarts the "still waiting" interval after a status change', () => {
+    const logs: string[] = [];
+    let t = 0;
+    const report = createStatusReporter(
+      (m) => logs.push(m),
+      () => t
+    );
+    report('Initializing');
+    t = 20_000;
+    report('Extracting');
+    t = 40_000; // only 20s since the last line
+    report('Extracting');
+    t = 50_000;
+    report('Extracting');
+    expect(logs).to.deep.equal([
+      'Deployment status: Initializing',
+      'Deployment status: Extracting',
+      'Still waiting (status: Extracting, 50s elapsed)...',
+    ]);
+  });
+});
+
 describe('nativeDeploy.NativeDeployer.deploy', () => {
   const dummyConnection = {} as unknown as Connection;
 
@@ -559,6 +737,262 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
     expect(createdMetadata[0].functionInvokeOptions).to.equal(undefined);
     expect((dataTransformBodies[0] as Record<string, unknown>).dataSpaceName).to.equal('my_space');
     await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('rejects a streaming script with no streamingSource.name before any API call', async () => {
+    // The config exactly as `script init -u StreamingTransform` writes it.
+    const { dir, packageDir } = await makePackage({
+      packageType: 'script',
+      config: { ...SCRIPT_STREAMING_CONFIG, streamingSource: { type: 'dlo', name: '' } },
+    });
+    const { deps, order } = recordingDeps();
+    const err = await expectReject(
+      NativeDeployer.deploy(
+        {
+          name: 'my-stream',
+          version: '1.0.0',
+          description: 'd',
+          packageDir,
+          cpuSize: 'CPU_2XL',
+          connection: dummyConnection,
+        },
+        deps
+      )
+    );
+    expect(err.name).to.equal('StreamingSourceNameEmpty');
+    expect(order).to.deep.equal([]);
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('rejects a streaming source missing from the read permissions before any API call', async () => {
+    // A named source that was never scanned into permissions.read.
+    const { dir, packageDir } = await makePackage({
+      packageType: 'script',
+      config: { ...SCRIPT_STREAMING_CONFIG, permissions: { read: { dlo: [] }, write: { dlo: ['Result__dll'] } } },
+    });
+    const { deps, order } = recordingDeps();
+    const err = await expectReject(
+      NativeDeployer.deploy(
+        {
+          name: 'my-stream',
+          version: '1.0.0',
+          description: 'd',
+          packageDir,
+          cpuSize: 'CPU_2XL',
+          connection: dummyConnection,
+        },
+        deps
+      )
+    );
+    expect(err.name).to.equal('StreamingSourceNotInReadPermissions');
+    expect(order).to.deep.equal([]);
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('deploys a streaming script with StreamingTransform invokeOptions and a STREAMING transform', async () => {
+    const { dir, packageDir } = await makePackage({ packageType: 'script', config: SCRIPT_STREAMING_CONFIG });
+    const { deps, createdMetadata, dataTransformBodies } = recordingDeps();
+
+    await NativeDeployer.deploy(
+      { name: 'my_stream', version: '1', description: 'd', packageDir, cpuSize: 'CPU_L', connection: dummyConnection },
+      deps
+    );
+
+    expect(createdMetadata[0].invokeOptions).to.deep.equal(['StreamingTransform']);
+    expect((dataTransformBodies[0] as Record<string, unknown>).type).to.equal('STREAMING');
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('does not set invokeOptions for a batch script', async () => {
+    const { dir, packageDir } = await makePackage({ packageType: 'script', config: SCRIPT_DLO_CONFIG });
+    const { deps, createdMetadata, dataTransformBodies } = recordingDeps();
+
+    await NativeDeployer.deploy(
+      { name: 'my_batch', version: '1', description: 'd', packageDir, cpuSize: 'CPU_L', connection: dummyConnection },
+      deps
+    );
+
+    expect(createdMetadata[0].invokeOptions).to.equal(undefined);
+    expect((dataTransformBodies[0] as Record<string, unknown>).type).to.equal('BATCH');
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('warns but still deploys BATCH when a delta-API entrypoint has no streamingSource', async () => {
+    const { dir, packageDir } = await makePackage({
+      packageType: 'script',
+      config: SCRIPT_DLO_CONFIG,
+      entrypoint: 'df = client.read_dlo_deltas()\nclient.write_dlo_deltas("Result__dll", df)\n',
+    });
+    const { deps, createdMetadata, dataTransformBodies } = recordingDeps();
+    const warnings: string[] = [];
+
+    await NativeDeployer.deploy(
+      {
+        name: 'my_batch',
+        version: '1',
+        description: 'd',
+        packageDir,
+        cpuSize: 'CPU_L',
+        connection: dummyConnection,
+        warn: (m) => warnings.push(m),
+      },
+      deps
+    );
+
+    expect(warnings).to.have.length(1);
+    expect(warnings[0]).to.include('entrypoint.py').and.include('no streamingSource');
+    expect(createdMetadata[0].invokeOptions).to.equal(undefined);
+    expect((dataTransformBodies[0] as Record<string, unknown>).type).to.equal('BATCH');
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('does not warn for a batch-only entrypoint, a streaming config, or a missing entrypoint', async () => {
+    const cases = [
+      { config: SCRIPT_DLO_CONFIG, entrypoint: 'df = client.read_dlo("Account__dll")\n' },
+      { config: SCRIPT_STREAMING_CONFIG, entrypoint: 'df = client.read_dlo_deltas()\n' },
+      { config: { ...SCRIPT_DLO_CONFIG, entryPoint: 'missing.py' }, entrypoint: 'df = client.read_dlo_deltas()\n' },
+    ];
+    for (const { config, entrypoint } of cases) {
+      // eslint-disable-next-line no-await-in-loop
+      const { dir, packageDir } = await makePackage({ packageType: 'script', config, entrypoint });
+      const warnings: string[] = [];
+      // eslint-disable-next-line no-await-in-loop
+      await NativeDeployer.deploy(
+        {
+          name: 'n',
+          version: '1',
+          description: 'd',
+          packageDir,
+          cpuSize: 'CPU_L',
+          connection: dummyConnection,
+          warn: (m) => warnings.push(m),
+        },
+        recordingDeps().deps
+      );
+      expect(warnings).to.deep.equal([]);
+      // eslint-disable-next-line no-await-in-loop
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  for (const [label, config, expectedPath, expectedInvokeOptions] of [
+    ['batch', SCRIPT_DLO_CONFIG, '/services/data/v63.0/ssot/data-custom-code', undefined],
+    ['streaming', SCRIPT_STREAMING_CONFIG, '/services/data/v67.0/ssot/data-custom-code', ['StreamingTransform']],
+  ] as const) {
+    it(`creates a ${label} deployment on ${expectedPath}`, async () => {
+      const { dir, packageDir } = await makePackage({ packageType: 'script', config });
+      const requests: Array<{ url: string; body: Record<string, unknown> }> = [];
+      // Record the real default createDeployment request, then stop the deploy with a 409.
+      const connection = {
+        request: (req: { url: string; body: string }) => {
+          requests.push({ url: req.url, body: JSON.parse(req.body) as Record<string, unknown> });
+          return Promise.reject(Object.assign(new Error('conflict'), { statusCode: 409 }));
+        },
+      } as unknown as Connection;
+
+      await expectReject(
+        NativeDeployer.deploy({
+          name: 'my_script',
+          version: '1',
+          description: 'd',
+          packageDir,
+          cpuSize: 'CPU_L',
+          connection,
+        })
+      );
+      expect(requests).to.have.length(1);
+      expect(requests[0].url).to.equal(expectedPath);
+      expect(requests[0].body.invokeOptions).to.deep.equal(expectedInvokeOptions);
+      await fs.rm(dir, { recursive: true, force: true });
+    });
+  }
+
+  describe('deploy output', () => {
+    async function deployLogs(
+      pkg: PackageOptions,
+      cpuSize = 'CPU_L',
+      overrides: Partial<NativeDeployDeps> = {}
+    ): Promise<string[]> {
+      const { dir, packageDir } = await makePackage(pkg);
+      const { deps } = recordingDeps(overrides);
+      const logs: string[] = [];
+      try {
+        await NativeDeployer.deploy(
+          {
+            name: 'pkg',
+            version: '1',
+            description: 'd',
+            packageDir,
+            cpuSize,
+            connection: dummyConnection,
+            log: (m) => logs.push(m),
+          },
+          deps
+        );
+      } finally {
+        await fs.rm(dir, { recursive: true, force: true });
+      }
+      return logs;
+    }
+
+    it('logs a batch transform deployment type', async () => {
+      const logs = await deployLogs({ packageType: 'script', config: SCRIPT_DLO_CONFIG });
+      expect(logs).to.include('Deployment type: BatchTransform (config.json has no streamingSource)');
+    });
+
+    it('logs a streaming transform deployment type with its source', async () => {
+      const logs = await deployLogs({ packageType: 'script', config: SCRIPT_STREAMING_CONFIG });
+      expect(logs).to.include('Deployment type: StreamingTransform (config.json streamingSource: dlo Account__dll)');
+    });
+
+    it('logs a function deployment type with the inferred feature', async () => {
+      const logs = await deployLogs({
+        packageType: 'function',
+        config: { entryPoint: 'entrypoint.py' },
+        entrypoint: CHUNKING_ENTRYPOINT,
+      });
+      expect(logs).to.include('Deployment type: SearchIndexChunking (inferred from the entrypoint signature)');
+    });
+
+    it('logs the deployment type before creating the deployment', async () => {
+      const logs = await deployLogs({ packageType: 'script', config: SCRIPT_DLO_CONFIG });
+      const typeIdx = logs.findIndex((m) => m.startsWith('Deployment type:'));
+      const createIdx = logs.findIndex((m) => m.startsWith('Creating deployment'));
+      expect(typeIdx).to.be.greaterThan(-1);
+      expect(typeIdx).to.be.lessThan(createIdx);
+    });
+
+    it('logs the selected CPU size without the compute type it maps to', async () => {
+      const logs = await deployLogs({ packageType: 'script', config: SCRIPT_DLO_CONFIG }, 'CPU_L');
+      expect(logs).to.include('CPU size: CPU_L');
+      expect(logs.join('\n')).to.not.include('CPU_XS');
+    });
+
+    it('warns that stopping early skips the data transform for scripts only', async () => {
+      const scriptLogs = await deployLogs({ packageType: 'script', config: SCRIPT_DLO_CONFIG });
+      expect(scriptLogs.join('\n')).to.include('Package extraction can take several minutes');
+      expect(scriptLogs.join('\n')).to.include("Stopping this command doesn't cancel the deployment");
+
+      const fnLogs = await deployLogs({
+        packageType: 'function',
+        config: { entryPoint: 'entrypoint.py' },
+        entrypoint: CHUNKING_ENTRYPOINT,
+      });
+      expect(fnLogs.join('\n')).to.include('Package extraction can take several minutes');
+      expect(fnLogs.join('\n')).to.not.include('data transform');
+    });
+
+    it('logs polled statuses only when they change', async () => {
+      const statuses = ['Initializing', 'Initializing', 'Initializing', 'Deployed'];
+      let i = 0;
+      const logs = await deployLogs({ packageType: 'script', config: SCRIPT_DLO_CONFIG }, 'CPU_L', {
+        getDeploymentStatus: async () => statuses[i++],
+      });
+      expect(logs.filter((m) => m.startsWith('Deployment status:'))).to.deep.equal([
+        'Deployment status: Initializing',
+        'Deployment status: Deployed',
+      ]);
+    });
   });
 
   it('infers the feature for a function package and skips the data transform', async () => {

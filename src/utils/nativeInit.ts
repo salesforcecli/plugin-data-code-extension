@@ -17,6 +17,12 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { debuglog } from 'node:util';
 import { Messages, SfError } from '@salesforce/core';
+import { isMap, parseDocument } from 'yaml';
+import {
+  SCRIPT_USE_IN_FEATURE_BATCH,
+  SCRIPT_USE_IN_FEATURE_OPTIONS,
+  SCRIPT_USE_IN_FEATURE_STREAMING,
+} from './constants.js';
 import { type CodeType, updateConfig } from './nativeScan.js';
 
 const debug = debuglog('datacustomcode');
@@ -27,6 +33,7 @@ const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension',
 export type NativeInitOptions = {
   codeType: CodeType;
   packageDir: string;
+  /** Directory containing the `datacustomcode` package (site-packages, or `src/` for editable installs). */
   pythonPackageLocation: string;
   pythonPackageVersion: string;
   useInFeature?: string;
@@ -45,6 +52,12 @@ const TESTS_DIR = 'tests';
 const TEST_FILE = 'test.json';
 const SDK_CONFIG_DIR = '.datacustomcode_proj';
 const SDK_CONFIG_FILE = 'sdk_config.json';
+// Mirror of `datacustomcode/template.py`: the streaming example entrypoint, and the SDK's
+// run config, which streaming packages get a copy of with the local delta reader/writer.
+const STREAMING_EXAMPLE_ENTRYPOINT = path.join('examples', 'streaming_deltas', ENTRYPOINT_FILE);
+// First SDK major version that ships the streaming template.
+const STREAMING_MIN_SDK_MAJOR = 7;
+const SDK_RUN_CONFIG_FILE = 'config.yaml';
 
 const FEATURE_TEMPLATE_MAPPING: Readonly<Record<string, string>> = {
   SearchIndexChunking: 'chunking',
@@ -66,12 +79,31 @@ const FEATURE_TEMPLATE_DIRS = new Set<string>(Object.values(FEATURE_TEMPLATE_MAP
  */
 export async function executeNativeInit(opts: NativeInitOptions): Promise<NativeInitResult> {
   const { codeType, packageDir, pythonPackageLocation, pythonPackageVersion, useInFeature } = opts;
-  const templatesDir = path.join(pythonPackageLocation, 'datacustomcode', 'templates');
+  const sdkDir = path.join(pythonPackageLocation, 'datacustomcode');
+  const templatesDir = path.join(sdkDir, 'templates');
   const filesCreated: string[] = [];
+  const streaming = codeType === 'script' && resolveScriptFeature(useInFeature) === SCRIPT_USE_IN_FEATURE_STREAMING;
 
   // 1. Copy template
   if (codeType === 'script') {
-    await copyScriptTemplate(path.join(templatesDir, 'script'), packageDir);
+    const scriptTemplateDir = path.join(templatesDir, 'script');
+    // Check (and load the run config) before copying anything, so an older SDK or a
+    // missing/malformed SDK config.yaml leaves no half-initialized package.
+    let streamingRunConfig: string | undefined;
+    if (streaming) {
+      await ensureStreamingTemplateExists(scriptTemplateDir, pythonPackageVersion);
+      streamingRunConfig = await buildStreamingRunConfig(path.join(sdkDir, SDK_RUN_CONFIG_FILE));
+    }
+    await copyScriptTemplate(scriptTemplateDir, packageDir);
+    if (streamingRunConfig !== undefined) {
+      await fs.copyFile(
+        path.join(scriptTemplateDir, STREAMING_EXAMPLE_ENTRYPOINT),
+        path.join(packageDir, PAYLOAD_DIR, ENTRYPOINT_FILE)
+      );
+      const runConfigPath = path.join(packageDir, SDK_RUN_CONFIG_FILE);
+      debug('streaming run config: %s', runConfigPath);
+      await fs.writeFile(runConfigPath, streamingRunConfig, 'utf8');
+    }
   } else {
     await copyFunctionTemplate(path.join(templatesDir, 'function'), packageDir, useInFeature);
   }
@@ -84,7 +116,7 @@ export async function executeNativeInit(opts: NativeInitOptions): Promise<Native
   await writeSdkConfig(packageDir, { type: codeType });
 
   // 3. Generate initial config.json, then update with scan results
-  const initialConfig = buildInitialConfig(codeType, entrypointPath, pythonPackageVersion);
+  const initialConfig = buildInitialConfig(codeType, entrypointPath, pythonPackageVersion, streaming);
   await writeJson(configPath, initialConfig);
 
   const finalConfig = await updateConfig(entrypointPath, codeType, configPath);
@@ -97,6 +129,72 @@ export async function executeNativeInit(opts: NativeInitOptions): Promise<Native
   }
 
   return { filesCreated, configPath, testJsonPath };
+}
+
+/** Mirror of `datacustomcode/cli.py:init` for scripts: defaults to BatchTransform, rejects unknown values. */
+function resolveScriptFeature(useInFeature: string | undefined): string {
+  const feature = useInFeature ?? SCRIPT_USE_IN_FEATURE_BATCH;
+  if (!SCRIPT_USE_IN_FEATURE_OPTIONS.includes(feature)) {
+    throw new SfError(
+      messages.getMessage('error.initInvalidScriptFeature', [feature, SCRIPT_USE_IN_FEATURE_OPTIONS.join(', ')]),
+      'InvalidUseInFeature'
+    );
+  }
+  return feature;
+}
+
+async function ensureStreamingTemplateExists(scriptTemplateDir: string, sdkVersion: string): Promise<void> {
+  const entrypoint = path.join(scriptTemplateDir, STREAMING_EXAMPLE_ENTRYPOINT);
+  if (!(await pathExists(entrypoint))) {
+    // 7.0.0+ ships the template, so a missing file there is an install problem, not an old SDK.
+    if (Number.parseInt(sdkVersion, 10) >= STREAMING_MIN_SDK_MAJOR) {
+      throw new SfError(
+        messages.getMessage('error.initTemplateNotFound', [entrypoint]),
+        'InitTemplateNotFound',
+        messages.getMessages('actions.initTemplateNotFound')
+      );
+    }
+    throw new SfError(
+      messages.getMessage('error.initStreamingTemplateNotFound', [sdkVersion, entrypoint]),
+      'InitStreamingTemplateNotFound',
+      messages.getMessages('actions.initStreamingTemplateNotFound')
+    );
+  }
+}
+
+/**
+ * Mirror of `datacustomcode/template.py:_write_streaming_config_yaml`: the SDK's
+ * config.yaml with the reader/writer switched to the local delta implementations. Edited
+ * as a YAML document so comments and formatting in the SDK file are kept. Returns the
+ * new file content; throws when the SDK file is missing or is not a valid YAML mapping.
+ */
+async function buildStreamingRunConfig(sourcePath: string): Promise<string> {
+  let raw: string;
+  try {
+    raw = await fs.readFile(sourcePath, 'utf8');
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new SfError(
+        messages.getMessage('error.initTemplateNotFound', [sourcePath]),
+        'InitTemplateNotFound',
+        messages.getMessages('actions.initTemplateNotFound')
+      );
+    }
+    throw err;
+  }
+  // parseDocument collects problems in doc.errors instead of throwing.
+  const doc = parseDocument(raw);
+  if (doc.errors.length > 0 || !isMap(doc.contents)) {
+    const reason = doc.errors[0]?.message ?? 'expected a YAML mapping at the top level';
+    throw new SfError(
+      messages.getMessage('error.initRunConfigInvalid', [sourcePath, reason]),
+      'InitRunConfigInvalid',
+      messages.getMessages('actions.initTemplateNotFound')
+    );
+  }
+  doc.setIn(['reader_config', 'type_config_name'], 'LocalDeltasReader');
+  doc.setIn(['writer_config', 'type_config_name'], 'LocalDeltasWriter');
+  return doc.toString();
 }
 
 async function copyTemplateEntries(
@@ -170,12 +268,19 @@ async function writeSdkConfig(baseDir: string, config: Record<string, unknown>):
   await writeJson(path.join(sdkConfigDir, SDK_CONFIG_FILE), config);
 }
 
-function buildInitialConfig(codeType: CodeType, entrypointPath: string, sdkVersion: string): Record<string, unknown> {
+function buildInitialConfig(
+  codeType: CodeType,
+  entrypointPath: string,
+  sdkVersion: string,
+  streaming: boolean
+): Record<string, unknown> {
   if (codeType === 'script') {
+    // Mirror of DATA_TRANSFORM_CONFIG_TEMPLATE / STREAMING_TRANSFORM_CONFIG_TEMPLATE in `datacustomcode/scan.py`.
     return {
       sdkVersion,
       entryPoint: path.basename(entrypointPath),
       dataspace: 'default',
+      ...(streaming ? { streamingSource: { type: 'dlo', name: '' } } : {}),
       permissions: {
         read: {},
         write: {},

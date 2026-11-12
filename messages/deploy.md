@@ -156,9 +156,25 @@ The --%s flag value exceeds the maximum length of %s characters (%s provided).
 
 API name '%s' was sanitized to '%s'.
 
-# info.inferredFeature
+# info.deploymentType
 
-Inferred feature: %s
+Deployment type: %s (%s)
+
+# info.deploymentTypeReason.batch
+
+config.json has no streamingSource
+
+# info.deploymentTypeReason.streaming
+
+config.json streamingSource: %s %s
+
+# info.deploymentTypeReason.function
+
+inferred from the entrypoint signature
+
+# info.cpuSize
+
+CPU size: %s
 
 # info.creatingDeployment
 
@@ -174,7 +190,15 @@ Uploading deployment package...
 
 # info.waitingForDeployment
 
-Waiting for deployment to complete...
+Waiting for deployment to complete. Package extraction can take several minutes.
+
+# info.waitingForDeploymentScriptNote
+
+Stopping this command doesn't cancel the deployment, but the data transform is only created after the deployment finishes. If you stop early, the data transform is not created.
+
+# info.deploymentStillWaiting
+
+Still waiting (status: %s, %s elapsed)...
 
 # info.deploymentStatusPolled
 
@@ -220,6 +244,31 @@ config.json at %s is missing required fields: %s.
 # error.configInvalid
 
 config.json at %s is invalid: %s.
+
+# warning.streamingEntrypointBatchConfig
+
+%s calls the streaming delta APIs (read_dlo_deltas, write_dlo_deltas, ...), but config.json has no streamingSource, so this deploys as a BatchTransform. If this is meant to be a streaming transform, run 'sf data-code-extension script scan' and set streamingSource.name, then deploy again.
+
+# error.streamingSourceNameEmpty
+
+streamingSource.name is empty in config.json at %s. A streaming transform needs the DLO or DMO it reads from.
+
+# actions.streamingSourceNameEmpty
+
+- Set streamingSource.name in config.json to the DLO or DMO the streaming transform reads from.
+- Run 'sf data-code-extension script scan' to update permissions, then deploy again.
+
+# error.streamingSourceTypeInvalid
+
+streamingSource.type in config.json at %s is '%s'. It must be 'dlo' or 'dmo'.
+
+# error.streamingSourceNotInReadPermissions
+
+streamingSource.name '%s' in config.json at %s isn't listed in %s. A streaming transform can only read from a source declared in its read permissions.
+
+# actions.streamingSourceNotInReadPermissions
+
+- Run 'sf data-code-extension script scan' to sync streamingSource.type and permissions.read with streamingSource.name, then deploy again.
 
 # error.dmoRequiresDataObjects
 

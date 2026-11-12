@@ -41,6 +41,7 @@ import { homedir, tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect } from 'chai';
+import { parse as parseYaml } from 'yaml';
 import { listZipEntries, startMockDataCloud, type MockDataCloud, type RecordedRequest } from './mockDataCloud.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -58,9 +59,9 @@ let mock: MockDataCloud;
 let childEnv: NodeJS.ProcessEnv;
 
 /** Run the plugin asynchronously (the mock server lives in this process). */
-function runPlugin(args: string[], cwd: string): Promise<CommandResult> {
+function runPlugin(args: string[], cwd: string, env: NodeJS.ProcessEnv = {}): Promise<CommandResult> {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [BIN, ...args], { cwd, env: childEnv });
+    const child = spawn(process.execPath, [BIN, ...args], { cwd, env: { ...childEnv, ...env } });
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (d: Buffer) => (stdout += d.toString()));
@@ -70,8 +71,8 @@ function runPlugin(args: string[], cwd: string): Promise<CommandResult> {
   });
 }
 
-async function runOk(args: string[], cwd: string): Promise<CommandResult> {
-  const result = await runPlugin(args, cwd);
+async function runOk(args: string[], cwd: string, env?: NodeJS.ProcessEnv): Promise<CommandResult> {
+  const result = await runPlugin(args, cwd, env);
   if (result.code !== 0) {
     throw new Error(
       `sf ${args.join(' ')} exited ${String(result.code)}\n--- stdout ---\n${result.stdout}\n--- stderr ---\n${
@@ -307,6 +308,150 @@ describe('e2e smoke', function () {
         cwd
       );
       expectMatches('script/requests.json', requestsSince(start));
+    });
+  });
+
+  describe('streaming script', () => {
+    let cwd: string;
+    let pkg: string;
+    const configPath = (): string => path.join(pkg, 'payload', 'config.json');
+    const deployArgs = (): string[] => [
+      'data-code-extension',
+      'script',
+      'deploy',
+      '--name',
+      'smoke_streaming',
+      '--package-version',
+      '1.0.0',
+      '--description',
+      'Smoke test streaming script',
+      '--package-dir',
+      path.join(pkg, 'payload'),
+      '--target-org',
+      USERNAME,
+    ];
+
+    before(() => {
+      cwd = path.join(workDir, 'streaming');
+      pkg = path.join(cwd, 'pkg');
+      mkdirSync(cwd);
+    });
+
+    it('init scaffolds a StreamingTransform package', async () => {
+      const result = await runOk(
+        ['data-code-extension', 'script', 'init', '--package-dir', pkg, '--use-in-feature', 'StreamingTransform'],
+        cwd
+      );
+      expect(result.stderr).to.include('streamingSource.name');
+
+      // The entrypoint and its write target come from the SDK's streaming example, so
+      // check the shape rather than exact content.
+      const config = readJson(configPath()) as {
+        streamingSource: unknown;
+        permissions: { read: unknown; write: { dlo: string[] } };
+      };
+      expect(config.streamingSource).to.deep.equal({ type: 'dlo', name: '' });
+      expect(config.permissions.read).to.deep.equal({ dlo: [] });
+      expect(config.permissions.write.dlo).to.be.an('array').that.is.not.empty;
+
+      const runConfig = parseYaml(readFileSync(path.join(pkg, 'config.yaml'), 'utf8')) as Record<
+        string,
+        { ['type_config_name']: string }
+      >;
+      expect(runConfig.reader_config.type_config_name).to.equal('LocalDeltasReader');
+      expect(runConfig.writer_config.type_config_name).to.equal('LocalDeltasWriter');
+    });
+
+    it('deploy rejects the unedited config before any API call', async () => {
+      const start = mock.requests.length;
+      const result = await runPlugin(deployArgs(), cwd);
+      expect(result.code, result.stderr).to.not.equal(0);
+      expect(result.stderr).to.include('StreamingSourceNameEmpty');
+      expect(requestsSince(start)).to.deep.equal([]);
+    });
+
+    it('scan keeps streamingSource.name and writes delta permissions', async () => {
+      copyFileSync(path.join(FIXTURES_DIR, 'streaming', 'entrypoint.py'), path.join(pkg, 'payload', 'entrypoint.py'));
+      const config = readJson(configPath()) as Record<string, unknown>;
+      writeFileSync(
+        configPath(),
+        JSON.stringify({ ...config, streamingSource: { type: 'dlo', name: 'Smoke_Stream_Source__dll' } }, null, 2)
+      );
+
+      const result = await runOk(
+        [
+          'data-code-extension',
+          'script',
+          'scan',
+          '--entrypoint',
+          path.join(pkg, 'payload', 'entrypoint.py'),
+          '--no-prompt',
+        ],
+        cwd
+      );
+      expect(result.stderr).to.not.include('streamingSource.name is empty');
+      expectMatches('streaming/config.json', readJson(configPath()));
+    });
+
+    it('zip packages the payload', async () => {
+      await runOk(['data-code-extension', 'script', 'zip', '--package-dir', path.join(pkg, 'payload')], cwd);
+      expectMatches('streaming/zip-entries.json', await zipEntries(path.join(cwd, 'deployment.zip')));
+    });
+
+    it('deploy creates a streaming deployment and a STREAMING transform', async () => {
+      const start = mock.requests.length;
+      await runOk(deployArgs(), cwd);
+      expectMatches('streaming/requests.json', requestsSince(start));
+    });
+
+    // Runs last: the delta fixtures live under payload/, so they'd otherwise end up in the zip.
+    it('run drains local delta fixtures through the generated config.yaml', async function () {
+      // Local Spark streaming checkpoints need Hadoop's winutils.exe on Windows, which CI runners don't have.
+      if (process.platform === 'win32') this.skip();
+      // LocalDeltasReader reads payload/streaming_fixtures/<streamingSource.name>, relative to the
+      // working directory. Seeding _schema.json up front keeps it from querying the org.
+      const fixtures = path.join(pkg, 'payload', 'streaming_fixtures', 'Smoke_Stream_Source__dll');
+      mkdirSync(fixtures, { recursive: true });
+      writeFileSync(
+        path.join(fixtures, '_schema.json'),
+        JSON.stringify({
+          type: 'struct',
+          fields: [
+            { name: 'Id__c', type: 'string', nullable: true, metadata: {} },
+            { name: 'Name__c', type: 'string', nullable: true, metadata: {} },
+          ],
+        })
+      );
+      const change = (id: string, name: string, version: number, op: string): string =>
+        JSON.stringify({
+          ['Id__c']: id,
+          ['Name__c']: name,
+          ['_commit_version']: version,
+          ['_commit_timestamp']: '2026-01-01T00:00:00Z',
+          ['_merge_record_type']: op,
+        });
+      writeFileSync(
+        path.join(fixtures, '001.json'),
+        [change('a1', 'smoke-upsert', 1, 'UPSERT'), change('a2', 'smoke-delete', 2, 'DELETE')].join('\n')
+      );
+
+      const result = await runOk(
+        [
+          'data-code-extension',
+          'script',
+          'run',
+          '--entrypoint',
+          path.join(pkg, 'payload', 'entrypoint.py'),
+          '--target-org',
+          USERNAME,
+        ],
+        pkg,
+        { ['BYOC_RUN_MODE']: 'DELTA_SYNC' }
+      );
+      // LocalDeltasWriter prints one preview per micro-batch, tagging each row with its operation.
+      expect(result.stdout).to.match(/Target=Smoke_Stream_Target__dll batch_id=0 file=\S+ rows=2/);
+      expect(result.stdout).to.include('smoke-upsert');
+      expect(result.stdout).to.match(/smoke-delete\s*\|\s*DELETE/);
     });
   });
 

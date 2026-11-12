@@ -37,6 +37,13 @@ jobs:
         with:
           python-version: '3.11'
 
+      # `script run` starts a local Spark session. PySpark supports Java 8/11/17 and
+      # fails to launch on the runner's default JDK (24+ rejects its Security Manager flag).
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
       - name: Install Python SDK
         shell: bash
         env:

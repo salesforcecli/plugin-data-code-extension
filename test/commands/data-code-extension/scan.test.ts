@@ -215,6 +215,57 @@ describe('data-code-extension scan commands', () => {
     });
   });
 
+  describe('script scan (streaming)', () => {
+    const streamingCode =
+      'from datacustomcode.client import StreamingClient\n' +
+      'def main():\n' +
+      '    c = StreamingClient()\n' +
+      '    df = c.read_dlo_deltas()\n' +
+      '    c.write_dlo_deltas("Dest__dll", df).awaitTermination()\n';
+
+    it('writes a streaming config and does not warn when streamingSource.name is set', async () => {
+      makeScriptPackage(streamingCode, { dataspace: 'default', streamingSource: { type: 'dlo', name: 'Source__dll' } });
+
+      await ScriptScan.run([]);
+
+      const written = JSON.parse(fs.readFileSync(path.join(testDir, 'payload', 'config.json'), 'utf8')) as Record<
+        string,
+        unknown
+      >;
+      expect(written.streamingSource).to.deep.equal({ type: 'dlo', name: 'Source__dll' });
+      expect(written.permissions).to.deep.equal({ read: { dlo: ['Source__dll'] }, write: { dlo: ['Dest__dll'] } });
+      expect(sfCommandStubs.warn.called).to.be.false;
+    });
+
+    it('warns when streamingSource.name is empty', async () => {
+      makeScriptPackage(streamingCode, { dataspace: 'default', streamingSource: { type: 'dlo', name: '' } });
+
+      await ScriptScan.run(['--dry-run']);
+
+      expect(
+        sfCommandStubs.warn
+          .getCalls()
+          .map((call) => call.args[0] as string)
+          .join('\n')
+      ).to.include('streamingSource.name is empty');
+    });
+
+    it('warns about named batch calls the streaming scan leaves out of permissions', async () => {
+      makeScriptPackage(streamingCode + '    c.write_to_dlo("Other__dll", df)\n', {
+        dataspace: 'default',
+        streamingSource: { type: 'dlo', name: 'Source__dll' },
+      });
+
+      await ScriptScan.run(['--dry-run']);
+
+      const warnings = sfCommandStubs.warn
+        .getCalls()
+        .map((call) => call.args[0] as string)
+        .join('\n');
+      expect(warnings).to.include('left out of permissions').and.include('Other__dll');
+    });
+  });
+
   describe('function scan', () => {
     it('updates config.json with entryPoint and skips permissions', async () => {
       makeFunctionPackage(

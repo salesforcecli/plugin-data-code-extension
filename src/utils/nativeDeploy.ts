@@ -19,7 +19,8 @@ import path from 'node:path';
 import { debuglog } from 'node:util';
 import { Messages, SfError, type Connection } from '@salesforce/core';
 import { decodeHTML } from 'entities';
-import { findBaseDirectory, getPackageType, type CodeType } from './nativeScan.js';
+import { SCRIPT_USE_IN_FEATURE_BATCH, SCRIPT_USE_IN_FEATURE_STREAMING } from './constants.js';
+import { fileIsStreaming, findBaseDirectory, getPackageType, type CodeType } from './nativeScan.js';
 import { zipWithSfError, ZIP_FILE_NAME, type ZipResult } from './zipBuilder.js';
 
 const debug = debuglog('datacustomcode');
@@ -27,9 +28,11 @@ const debug = debuglog('datacustomcode');
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'deploy');
 
-// Mirror of the Data Cloud REST paths in `datacustomcode/deploy.py`. Kept at
-// v63.0 to match the SDK's `main` branch (streaming / v67.0 is out of scope).
+// Mirror of the Data Cloud REST paths in `datacustomcode/deploy.py`.
 const DATA_CUSTOM_CODE_PATH = 'services/data/v63.0/ssot/data-custom-code';
+// `invokeOptions` only binds at v67.0, so deployment creation routes there when
+// it is set (streaming scripts). Everything else, including status polling, stays on v63.0.
+const DATA_CUSTOM_CODE_INVOKE_OPTIONS_PATH = 'services/data/v67.0/ssot/data-custom-code';
 const DATA_TRANSFORMS_PATH = 'services/data/v63.0/ssot/data-transforms';
 // Python waits up to 3000 *seconds* (`WAIT_FOR_DEPLOYMENT_TIMEOUT`), polling once a second.
 const WAIT_FOR_DEPLOYMENT_TIMEOUT_MS = 3000 * 1000;
@@ -73,6 +76,7 @@ export type CodeExtensionMetadata = {
   computeType: string;
   codeType: CodeType;
   functionInvokeOptions?: string[];
+  invokeOptions?: string[];
 };
 
 export type CreateDeploymentResponse = {
@@ -103,7 +107,11 @@ export type DataTransformConfig = {
   dataspace: string;
   permissions: { read: Permission; write: Permission };
   dataObjects?: DataObject[];
+  /** Present only for streaming transforms; its presence makes the transform STREAMING. */
+  streamingSource?: StreamingSource;
 };
+
+export type StreamingSource = { type: string; name: string };
 
 export type FunctionConfig = {
   entryPoint: string;
@@ -122,6 +130,8 @@ export type NativeDeployOptions = {
   /** Authenticated org connection used for the Data Cloud REST calls. */
   connection: Connection;
   log?: (message: string) => void;
+  /** Non-fatal problems the user should see. Defaults to `log`. */
+  warn?: (message: string) => void;
 };
 
 export type NativeDeployResult = {
@@ -167,7 +177,7 @@ export function sanitizeApiName(name: string): string {
  */
 export function buildMetadata(
   input: { name: string; version: string; description: string; computeType: string; codeType: CodeType },
-  log: (message: string) => void = (): void => { }
+  log: (message: string) => void = (): void => {}
 ): CodeExtensionMetadata {
   const sanitized = sanitizeApiName(input.name);
   if (sanitized !== input.name) {
@@ -380,7 +390,7 @@ export function buildDataTransformBody(
     definition,
     label: metadata.name,
     name: metadata.name,
-    type: 'BATCH',
+    type: config.streamingSource ? 'STREAMING' : 'BATCH',
     dataSpaceName: config.dataspace,
   };
 }
@@ -458,7 +468,60 @@ function validateDataTransformConfig(parsed: unknown, configPath: string): DataT
     dataspace: String(parsed.dataspace),
     permissions: { read, write },
     dataObjects: parsed.dataObjects as DataObject[] | undefined,
+    ...parseStreamingSource(parsed.streamingSource, read, configPath),
   };
+}
+
+/** Mirror of `StreamingSource` in `datacustomcode/deploy.py`: optional, but when present needs string `type`/`name`. */
+function parseStreamingSource(
+  value: unknown,
+  read: Permission,
+  configPath: string
+): { streamingSource?: StreamingSource } {
+  if (value === undefined || value === null) return {};
+  if (!isRecord(value) || typeof value.type !== 'string' || typeof value.name !== 'string') {
+    throw new SfError(
+      messages.getMessage('error.configInvalid', [
+        configPath,
+        "streamingSource must be an object with string 'type' and 'name'",
+      ]),
+      'InvalidConfig'
+    );
+  }
+  // Stricter than the SDK: init leaves the name empty, and deploying that creates a
+  // STREAMING transform with no input source.
+  if (value.name.trim().length === 0) {
+    throw new SfError(
+      messages.getMessage('error.streamingSourceNameEmpty', [configPath]),
+      'StreamingSourceNameEmpty',
+      messages.getMessages('actions.streamingSourceNameEmpty')
+    );
+  }
+  // Also stricter than the SDK: the backend only extracts from a streaming source listed in
+  // permissions.read, so catch a hand-edited (or never-scanned) source before creating anything.
+  // Scan writes the type as the read layer and the name as the only read permission.
+  const type = value.type.toLowerCase();
+  if (type !== 'dlo' && type !== 'dmo') {
+    throw new SfError(
+      messages.getMessage('error.streamingSourceTypeInvalid', [configPath, value.type]),
+      'StreamingSourceTypeInvalid',
+      messages.getMessages('actions.streamingSourceNotInReadPermissions')
+    );
+  }
+  // Case-insensitive, matching the backend's equalsIgnoreCase check.
+  const sourceName = value.name.toLowerCase();
+  if (!read[type]?.some((name) => name.toLowerCase() === sourceName)) {
+    throw new SfError(
+      messages.getMessage('error.streamingSourceNotInReadPermissions', [
+        value.name,
+        configPath,
+        `permissions.read.${type}`,
+      ]),
+      'StreamingSourceNotInReadPermissions',
+      messages.getMessages('actions.streamingSourceNotInReadPermissions')
+    );
+  }
+  return { streamingSource: { type: value.type, name: value.name } };
 }
 
 function validateFunctionConfig(parsed: unknown, configPath: string): FunctionConfig {
@@ -610,10 +673,19 @@ function defaultCreateDeployment(connection: Connection): NativeDeployDeps['crea
     if (metadata.functionInvokeOptions && metadata.functionInvokeOptions.length > 0) {
       body.functionInvokeOptions = metadata.functionInvokeOptions;
     }
+    const hasInvokeOptions = metadata.invokeOptions !== undefined && metadata.invokeOptions.length > 0;
+    if (hasInvokeOptions) {
+      body.invokeOptions = metadata.invokeOptions;
+    }
 
     let response: CreateDeploymentResponse;
     try {
-      response = await requestJson<CreateDeploymentResponse>(connection, 'POST', DATA_CUSTOM_CODE_PATH, body);
+      response = await requestJson<CreateDeploymentResponse>(
+        connection,
+        'POST',
+        hasInvokeOptions ? DATA_CUSTOM_CODE_INVOKE_OPTIONS_PATH : DATA_CUSTOM_CODE_PATH,
+        body
+      );
     } catch (err) {
       if (isConflictError(err)) {
         throw new SfError(messages.getMessage('error.deploymentExists', [metadata.name]), 'DeploymentExists');
@@ -671,7 +743,7 @@ export async function waitForDeployment(
   onStatus?: (status: string) => void
 ): Promise<string> {
   const start = deps.now();
-  for (; ;) {
+  for (;;) {
     // eslint-disable-next-line no-await-in-loop
     const status = await deps.getDeploymentStatus(name);
     if (deps.now() - start > WAIT_FOR_DEPLOYMENT_TIMEOUT_MS) {
@@ -684,6 +756,48 @@ export async function waitForDeployment(
     }
     // eslint-disable-next-line no-await-in-loop
     await deps.sleep(POLL_INTERVAL_MS);
+  }
+}
+
+/** How often a "still waiting" line is printed while the status doesn't change. */
+export const STILL_WAITING_INTERVAL_MS = 30 * 1000;
+
+function formatElapsed(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+}
+
+/**
+ * Build the `onStatus` callback for `waitForDeployment`. Polling happens every
+ * second, so print the status only when it changes, plus a periodic
+ * "still waiting" line with the elapsed time.
+ */
+export function createStatusReporter(log: (message: string) => void, now: () => number): (status: string) => void {
+  const start = now();
+  let lastStatus: string | undefined;
+  let lastLogAt = start;
+  return (status: string): void => {
+    const current = now();
+    if (status !== lastStatus) {
+      lastStatus = status;
+      lastLogAt = current;
+      log(messages.getMessage('info.deploymentStatusPolled', [status]));
+    } else if (current - lastLogAt >= STILL_WAITING_INTERVAL_MS) {
+      lastLogAt = current;
+      log(messages.getMessage('info.deploymentStillWaiting', [status, formatElapsed(current - start)]));
+    }
+  };
+}
+
+/** `fileIsStreaming`, treating a missing entrypoint as not streaming (the zip step reports it). */
+async function entrypointIsStreaming(entrypointPath: string): Promise<boolean> {
+  try {
+    return await fileIsStreaming(entrypointPath);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return false;
+    throw err;
   }
 }
 
@@ -701,7 +815,8 @@ export class NativeDeployer {
     opts: NativeDeployOptions,
     overrides: Partial<NativeDeployDeps> = {}
   ): Promise<NativeDeployResult> {
-    const log = opts.log ?? ((): void => { });
+    const log = opts.log ?? ((): void => {});
+    const warn = opts.warn ?? log;
 
     const computeType = COMPUTE_TYPES[opts.cpuSize];
     if (!computeType) {
@@ -710,6 +825,8 @@ export class NativeDeployer {
         'InvalidCpuSize'
       );
     }
+
+    log(messages.getMessage('info.cpuSize', [opts.cpuSize]));
 
     const baseDir = findBaseDirectory(opts.packageDir);
     const packageType = await getPackageType(baseDir);
@@ -725,18 +842,57 @@ export class NativeDeployer {
       log
     );
 
+    let functionFeature: string | undefined;
     if (packageType === 'function') {
       const entrypointPath = path.join(opts.packageDir, ENTRYPOINT_FILE);
       const feature = await inferUseInFeature(entrypointPath);
       if (!feature) {
         throw new SfError(messages.getMessage('error.functionSignatureMismatch'), 'FunctionSignatureMismatch');
       }
-      log(messages.getMessage('info.inferredFeature', [feature]));
+      functionFeature = feature;
       metadata.functionInvokeOptions = [USE_IN_FEATURE_MAPPING_FOR_CONNECT_API[feature] ?? feature];
     }
 
     // Validate config.json up front so a bad package fails before any API call.
     const config = await getConfig(opts.packageDir, packageType);
+
+    // Mirror of `deploy_full`: a config with `streamingSource` deploys as a streaming transform.
+    const streamingSource = packageType === 'script' ? (config as DataTransformConfig).streamingSource : undefined;
+    if (streamingSource && !metadata.invokeOptions) {
+      metadata.invokeOptions = [SCRIPT_USE_IN_FEATURE_STREAMING];
+    }
+    // Not in `deploy_full`: a delta-API entrypoint with a stale or hand-edited config (no
+    // streamingSource) would otherwise go out as BATCH and only break at runtime. Warn
+    // rather than fail, since a batch run can legitimately skip the delta branch.
+    if (packageType === 'script' && !streamingSource) {
+      const entryPoint = (config as DataTransformConfig).entryPoint || ENTRYPOINT_FILE;
+      if (await entrypointIsStreaming(path.join(opts.packageDir, entryPoint))) {
+        warn(messages.getMessage('warning.streamingEntrypointBatchConfig', [entryPoint]));
+      }
+    }
+
+    if (functionFeature) {
+      log(
+        messages.getMessage('info.deploymentType', [
+          functionFeature,
+          messages.getMessage('info.deploymentTypeReason.function'),
+        ])
+      );
+    } else if (streamingSource) {
+      log(
+        messages.getMessage('info.deploymentType', [
+          SCRIPT_USE_IN_FEATURE_STREAMING,
+          messages.getMessage('info.deploymentTypeReason.streaming', [streamingSource.type, streamingSource.name]),
+        ])
+      );
+    } else {
+      log(
+        messages.getMessage('info.deploymentType', [
+          SCRIPT_USE_IN_FEATURE_BATCH,
+          messages.getMessage('info.deploymentTypeReason.batch'),
+        ])
+      );
+    }
 
     const deps = buildDefaultDeps(opts.connection, overrides);
 
@@ -750,9 +906,10 @@ export class NativeDeployer {
     await deps.uploadZip(deployment.fileUploadUrl, path.resolve(ZIP_FILE_NAME));
 
     log(messages.getMessage('info.waitingForDeployment'));
-    const status = await waitForDeployment(metadata.name, deps, (s) =>
-      log(messages.getMessage('info.deploymentStatusPolled', [s]))
-    );
+    if (packageType === 'script') {
+      log(messages.getMessage('info.waitingForDeploymentScriptNote'));
+    }
+    const status = await waitForDeployment(metadata.name, deps, createStatusReporter(log, deps.now));
 
     if (packageType === 'script') {
       log(messages.getMessage('info.creatingDataTransform'));

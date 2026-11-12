@@ -13,11 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import * as path from 'node:path';
 import { TestContext } from '@salesforce/core/testSetup';
 import { expect } from 'chai';
+import type * as sinon from 'sinon';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
 import ScriptInit from '../../../src/commands/data-code-extension/script/init.js';
 import FunctionInit from '../../../src/commands/data-code-extension/function/init.js';
+import { PythonChecker } from '../../../src/utils/pythonChecker.js';
+import { PipChecker } from '../../../src/utils/pipChecker.js';
 
 describe('data-code-extension init commands', () => {
   const $$ = new TestContext();
@@ -274,5 +280,89 @@ describe('data-code-extension init commands', () => {
       expect(message).to.include('BatchTransform');
       expect(message).to.include('StreamingTransform');
     }
+  });
+
+  describe('with a stubbed environment', () => {
+    let root: string;
+    let checkPackageStub: sinon.SinonStub;
+    let findPackageDirStub: sinon.SinonStub;
+
+    beforeEach(() => {
+      root = mkdtempSync(path.join(tmpdir(), 'init-command-'));
+      // Minimal fake SDK install with the script template, streaming example, and config.yaml.
+      const sdk = path.join(root, 'site-packages', 'datacustomcode');
+      const script = path.join(sdk, 'templates', 'script');
+      mkdirSync(path.join(script, 'payload'), { recursive: true });
+      mkdirSync(path.join(script, 'examples', 'streaming_deltas'), { recursive: true });
+      writeFileSync(
+        path.join(script, 'payload', 'entrypoint.py'),
+        'c.read_dlo("a__dll")\nc.write_to_dlo("b__dll", df)\n'
+      );
+      writeFileSync(path.join(script, 'payload', 'config.json'), '{}');
+      writeFileSync(
+        path.join(script, 'examples', 'streaming_deltas', 'entrypoint.py'),
+        'df = c.read_dlo_deltas()\nc.write_dlo_deltas("b__dll", df)\n'
+      );
+      writeFileSync(
+        path.join(sdk, 'config.yaml'),
+        'reader_config:\n  type_config_name: R\nwriter_config:\n  type_config_name: W\n'
+      );
+
+      $$.SANDBOX.stub(PythonChecker, 'checkPython311').resolves({
+        command: 'python3',
+        version: '3.11.5',
+        major: 3,
+        minor: 11,
+        patch: 5,
+      });
+      checkPackageStub = $$.SANDBOX.stub(PipChecker, 'checkPackage').resolves({
+        name: 'salesforce-data-customcode',
+        version: '7.0.0',
+        location: path.join(root, 'site-packages'),
+        pipCommand: 'pip3',
+      });
+      // Default: Python can't locate the SDK, so init falls back to pip's location.
+      findPackageDirStub = $$.SANDBOX.stub(PythonChecker, 'findPackageDir').resolves(null);
+    });
+
+    afterEach(() => {
+      rmSync(root, { recursive: true, force: true });
+    });
+
+    it('uses the SDK location reported by Python for an editable install', async () => {
+      // Editable installs: pip reports a site-packages dir that doesn't hold the package.
+      const emptySitePackages = path.join(root, 'venv-site-packages');
+      mkdirSync(emptySitePackages);
+      checkPackageStub.resolves({
+        name: 'salesforce-data-customcode',
+        version: '7.0.1.dev8',
+        location: emptySitePackages,
+        pipCommand: 'pip3',
+      });
+      findPackageDirStub.resolves(path.join(root, 'site-packages', 'datacustomcode'));
+
+      const packageDir = path.join(root, 'editable');
+      await ScriptInit.run(['--package-dir', packageDir, '--use-in-feature', 'StreamingTransform']);
+
+      expect(findPackageDirStub.calledOnceWith('python3', 'datacustomcode')).to.be.true;
+      expect(readFileSync(path.join(packageDir, 'payload', 'entrypoint.py'), 'utf8')).to.include('read_dlo_deltas');
+    });
+
+    it('warns to set streamingSource.name after a StreamingTransform init', async () => {
+      const packageDir = path.join(root, 'stream');
+      await ScriptInit.run(['--package-dir', packageDir, '--use-in-feature', 'StreamingTransform']);
+
+      const warned = sfCommandStubs.warn
+        .getCalls()
+        .map((call) => call.args[0] as string)
+        .join('\n');
+      expect(warned).to.include('streamingSource.name');
+      expect(warned).to.include(path.join(packageDir, 'payload', 'config.json'));
+    });
+
+    it('does not warn after a BatchTransform init', async () => {
+      await ScriptInit.run(['--package-dir', path.join(root, 'batch')]);
+      expect(sfCommandStubs.warn.called).to.be.false;
+    });
   });
 });

@@ -153,6 +153,7 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
         network,
         connection,
         log: this.log.bind(this),
+        warn: this.warn.bind(this),
       });
 
       this.log(cmdMessages.getMessage('info.deploymentComplete', [result.name, result.version]));
