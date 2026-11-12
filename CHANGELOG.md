@@ -1,3 +1,17 @@
+# [1.7.0](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.6.3...1.7.0) (2026-11-12)
+
+### Bug Fixes
+
+- address review feedback on streaming init, scan, and deploy ([9306247](https://github.com/salesforcecli/plugin-data-code-extension/commit/93062472dc79155c868a99c7970914f17044d33b))
+- bugfix when testing locally ([c0c56ee](https://github.com/salesforcecli/plugin-data-code-extension/commit/c0c56ee387e6a37fb21f12059d630ef57318f25d))
+- reject a streaming source missing from the read permissions before deploying, Name matching is case-insensitive, matching the backend ([0c20e9f](https://github.com/salesforcecli/plugin-data-code-extension/commit/0c20e9f6b359acd4e3fc7c108c7326288721e14e))
+- reject an empty streamingSource.name before deploying ([ff208c2](https://github.com/salesforcecli/plugin-data-code-extension/commit/ff208c2be3a68133db53ac09545c2187bc8815c9))
+
+### Features
+
+- clearer deploy progress output ([bb741ea](https://github.com/salesforcecli/plugin-data-code-extension/commit/bb741ea7dbfa9aae0b198cc6fc078e078d3ee5cf))
+- support StreamingTransform scripts in init, scan, and deploy ([b35832f](https://github.com/salesforcecli/plugin-data-code-extension/commit/b35832ff89db3c6a1eca1cc5e5f131790e335565))
+
 ## [1.6.3](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.6.2...1.6.3) (2026-11-09)
 
 ### Bug Fixes
