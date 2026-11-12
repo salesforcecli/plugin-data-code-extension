@@ -466,12 +466,16 @@ function validateDataTransformConfig(parsed: unknown, configPath: string): DataT
     dataspace: String(parsed.dataspace),
     permissions: { read, write },
     dataObjects: parsed.dataObjects as DataObject[] | undefined,
-    ...parseStreamingSource(parsed.streamingSource, configPath),
+    ...parseStreamingSource(parsed.streamingSource, read, configPath),
   };
 }
 
 /** Mirror of `StreamingSource` in `datacustomcode/deploy.py`: optional, but when present needs string `type`/`name`. */
-function parseStreamingSource(value: unknown, configPath: string): { streamingSource?: StreamingSource } {
+function parseStreamingSource(
+  value: unknown,
+  read: Permission,
+  configPath: string
+): { streamingSource?: StreamingSource } {
   if (value === undefined || value === null) return {};
   if (!isRecord(value) || typeof value.type !== 'string' || typeof value.name !== 'string') {
     throw new SfError(
@@ -489,6 +493,30 @@ function parseStreamingSource(value: unknown, configPath: string): { streamingSo
       messages.getMessage('error.streamingSourceNameEmpty', [configPath]),
       'StreamingSourceNameEmpty',
       messages.getMessages('actions.streamingSourceNameEmpty')
+    );
+  }
+  // Also stricter than the SDK: the backend only extracts from a streaming source listed in
+  // permissions.read, so catch a hand-edited (or never-scanned) source before creating anything.
+  // Scan writes the type as the read layer and the name as the only read permission.
+  const type = value.type.toLowerCase();
+  if (type !== 'dlo' && type !== 'dmo') {
+    throw new SfError(
+      messages.getMessage('error.streamingSourceTypeInvalid', [configPath, value.type]),
+      'StreamingSourceTypeInvalid',
+      messages.getMessages('actions.streamingSourceNotInReadPermissions')
+    );
+  }
+  // Case-insensitive, matching the backend's equalsIgnoreCase check.
+  const sourceName = value.name.toLowerCase();
+  if (!read[type]?.some((name) => name.toLowerCase() === sourceName)) {
+    throw new SfError(
+      messages.getMessage('error.streamingSourceNotInReadPermissions', [
+        value.name,
+        configPath,
+        `permissions.read.${type}`,
+      ]),
+      'StreamingSourceNotInReadPermissions',
+      messages.getMessages('actions.streamingSourceNotInReadPermissions')
     );
   }
   return { streamingSource: { type: value.type, name: value.name } };

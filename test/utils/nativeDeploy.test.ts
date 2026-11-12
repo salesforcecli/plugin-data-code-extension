@@ -382,6 +382,70 @@ describe('nativeDeploy.getConfig', () => {
     });
   }
 
+  it('accepts a streamingSource type case-insensitively', async () => {
+    const { dir, packageDir } = await makePackage({
+      packageType: 'script',
+      config: { ...SCRIPT_STREAMING_CONFIG, streamingSource: { type: 'DLO', name: 'Account__dll' } },
+    });
+    const config = (await getConfig(packageDir, 'script')) as DataTransformConfig;
+    expect(config.streamingSource).to.deep.equal({ type: 'DLO', name: 'Account__dll' });
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('matches the streamingSource name against the read permissions case-insensitively', async () => {
+    const { dir, packageDir } = await makePackage({
+      packageType: 'script',
+      config: {
+        ...SCRIPT_STREAMING_CONFIG,
+        streamingSource: { type: 'dlo', name: 'Account__dll' },
+        permissions: { read: { dlo: ['account__dll'] }, write: { dlo: ['Result__dll'] } },
+      },
+    });
+    const config = (await getConfig(packageDir, 'script')) as DataTransformConfig;
+    expect(config.streamingSource).to.deep.equal({ type: 'dlo', name: 'Account__dll' });
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('rejects a streamingSource with an unknown type', async () => {
+    const { dir, packageDir } = await makePackage({
+      packageType: 'script',
+      config: { ...SCRIPT_STREAMING_CONFIG, streamingSource: { type: 'table', name: 'Account__dll' } },
+    });
+    const err = await expectReject(getConfig(packageDir, 'script'));
+    expect(err.name).to.equal('StreamingSourceTypeInvalid');
+    expect(err.message).to.include("'table'");
+    expect(err.actions?.join('\n')).to.include('scan');
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  const notInReadCases: Array<{ title: string; config: Record<string, unknown> }> = [
+    {
+      title: 'the read permissions are empty',
+      config: {
+        ...SCRIPT_STREAMING_CONFIG,
+        permissions: { read: { dlo: [] }, write: { dlo: ['Result__dll'] } },
+      },
+    },
+    {
+      title: 'the name was edited after scan',
+      config: { ...SCRIPT_STREAMING_CONFIG, streamingSource: { type: 'dlo', name: 'Contact__dll' } },
+    },
+    {
+      title: 'the type does not match the read layer',
+      config: { ...SCRIPT_STREAMING_CONFIG, streamingSource: { type: 'dmo', name: 'Account__dll' } },
+    },
+  ];
+  for (const { title, config } of notInReadCases) {
+    it(`rejects a streamingSource not in the read permissions when ${title}`, async () => {
+      const { dir, packageDir } = await makePackage({ packageType: 'script', config });
+      const err = await expectReject(getConfig(packageDir, 'script'));
+      expect(err.name).to.equal('StreamingSourceNotInReadPermissions');
+      expect(err.message).to.include('permissions.read.');
+      expect(err.actions?.join('\n')).to.include('scan');
+      await fs.rm(dir, { recursive: true, force: true });
+    });
+  }
+
   it('parses the optional dataObjects schema for a DLO write config', async () => {
     const { dir, packageDir } = await makePackage({
       packageType: 'script',
@@ -696,6 +760,31 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
       )
     );
     expect(err.name).to.equal('StreamingSourceNameEmpty');
+    expect(order).to.deep.equal([]);
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('rejects a streaming source missing from the read permissions before any API call', async () => {
+    // A named source that was never scanned into permissions.read.
+    const { dir, packageDir } = await makePackage({
+      packageType: 'script',
+      config: { ...SCRIPT_STREAMING_CONFIG, permissions: { read: { dlo: [] }, write: { dlo: ['Result__dll'] } } },
+    });
+    const { deps, order } = recordingDeps();
+    const err = await expectReject(
+      NativeDeployer.deploy(
+        {
+          name: 'my-stream',
+          version: '1.0.0',
+          description: 'd',
+          packageDir,
+          cpuSize: 'CPU_2XL',
+          connection: dummyConnection,
+        },
+        deps
+      )
+    );
+    expect(err.name).to.equal('StreamingSourceNotInReadPermissions');
     expect(order).to.deep.equal([]);
     await fs.rm(dir, { recursive: true, force: true });
   });

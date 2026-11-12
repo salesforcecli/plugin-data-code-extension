@@ -254,6 +254,18 @@ streamingSource.name is empty in config.json at %s. A streaming transform needs 
 - Set streamingSource.name in config.json to the DLO or DMO the streaming transform reads from.
 - Run 'sf data-code-extension script scan' to update permissions, then deploy again.
 
+# error.streamingSourceTypeInvalid
+
+streamingSource.type in config.json at %s is '%s'. It must be 'dlo' or 'dmo'.
+
+# error.streamingSourceNotInReadPermissions
+
+streamingSource.name '%s' in config.json at %s isn't listed in %s. A streaming transform can only read from a source declared in its read permissions.
+
+# actions.streamingSourceNotInReadPermissions
+
+- Run 'sf data-code-extension script scan' to sync streamingSource.type and permissions.read with streamingSource.name, then deploy again.
+
 # error.dmoRequiresDataObjects
 
 DMO transforms require 'dataObjects' in config.json describing the schema of each output DMO.
