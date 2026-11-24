@@ -7,7 +7,7 @@
       "name": "smoke_script",
       "description": "Smoke test script",
       "version": "1.0.0",
-      "computeType": "CPU_M",
+      "computeType": "Standard_2XL",
       "codeType": "script"
     }
   },

@@ -91,11 +91,11 @@ describe('data-code-extension deploy', () => {
       expect(opts.version).to.equal('1.0.0');
       expect(opts.description).to.equal('Test script deployment');
       expect(opts.packageDir).to.equal(testDir);
-      expect(opts.cpuSize).to.equal('CPU_2XL'); // Default CPU size
+      expect(opts.cpuSize).to.equal('Standard_2XL'); // Default compute size
       expect(opts.connection).to.equal(mockConnection);
     });
 
-    it('should deploy with custom CPU size', async () => {
+    it('should deploy with custom compute size', async () => {
       await ScriptDeploy.run([
         '--name',
         'test-script',
@@ -108,11 +108,11 @@ describe('data-code-extension deploy', () => {
         '--target-org',
         'test@example.com',
         '--cpu-size',
-        'CPU_4XL',
+        'Standard_4XL',
       ]);
 
       const opts = deployStub.firstCall.args[0] as Record<string, unknown>;
-      expect(opts.cpuSize).to.equal('CPU_4XL');
+      expect(opts.cpuSize).to.equal('Standard_4XL');
     });
 
     it('should deploy with network configuration', async () => {
@@ -206,7 +206,30 @@ describe('data-code-extension deploy', () => {
       expect(opts.name).to.equal('test-function');
     });
 
-    it('should validate CPU size options', async () => {
+    it('should reject retired CPU_* sizes', async () => {
+      try {
+        await FunctionDeploy.run([
+          '--name',
+          'test-function',
+          '--package-version',
+          '1.0.0',
+          '--description',
+          'Test function deployment',
+          '--package-dir',
+          testDir,
+          '--target-org',
+          'test@example.com',
+          '--cpu-size',
+          'CPU_2XL',
+        ]);
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).to.be.instanceOf(Error);
+        expect(deployStub.called).to.be.false;
+      }
+    });
+
+    it('should validate compute size options', async () => {
       try {
         await FunctionDeploy.run([
           '--name',
@@ -224,7 +247,7 @@ describe('data-code-extension deploy', () => {
         ]);
         expect.fail('Should have thrown an error');
       } catch (error) {
-        // Flag validation should catch invalid CPU size before deploy runs.
+        // Flag validation should catch invalid compute size before deploy runs.
         expect(error).to.be.instanceOf(Error);
         expect(deployStub.called).to.be.false;
       }

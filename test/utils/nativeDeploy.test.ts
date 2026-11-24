@@ -29,7 +29,6 @@ import {
   createStatusReporter,
   STILL_WAITING_INTERVAL_MS,
   htmlUnescape,
-  COMPUTE_TYPES,
   NativeDeployer,
   type CodeExtensionMetadata,
   type DataTransformConfig,
@@ -106,14 +105,14 @@ describe('nativeDeploy.buildMetadata', () => {
   it('keeps a valid name and carries fields through', () => {
     const logs: string[] = [];
     const meta = buildMetadata(
-      { name: 'valid_name', version: '1.0.0', description: 'd', computeType: 'CPU_M', codeType: 'script' },
+      { name: 'valid_name', version: '1.0.0', description: 'd', computeType: 'Standard_2XL', codeType: 'script' },
       (m) => logs.push(m)
     );
     expect(meta).to.deep.equal({
       name: 'valid_name',
       version: '1.0.0',
       description: 'd',
-      computeType: 'CPU_M',
+      computeType: 'Standard_2XL',
       codeType: 'script',
     });
     expect(logs).to.have.length(0);
@@ -122,7 +121,7 @@ describe('nativeDeploy.buildMetadata', () => {
   it('logs when the name is sanitized', () => {
     const logs: string[] = [];
     const meta = buildMetadata(
-      { name: 'my package', version: '1', description: 'd', computeType: 'CPU_M', codeType: 'script' },
+      { name: 'my package', version: '1', description: 'd', computeType: 'Standard_2XL', codeType: 'script' },
       (m) => logs.push(m)
     );
     expect(meta.name).to.equal('my_package');
@@ -131,13 +130,13 @@ describe('nativeDeploy.buildMetadata', () => {
 
   it('throws when the name sanitizes to empty', () => {
     expect(() =>
-      buildMetadata({ name: '!!!', version: '1', description: 'd', computeType: 'CPU_M', codeType: 'script' })
+      buildMetadata({ name: '!!!', version: '1', description: 'd', computeType: 'Standard_2XL', codeType: 'script' })
     ).to.throw(SfError, /invalid/i);
   });
 
   it('throws when the sanitized name does not begin with a letter', () => {
     expect(() =>
-      buildMetadata({ name: '123abc', version: '1', description: 'd', computeType: 'CPU_M', codeType: 'script' })
+      buildMetadata({ name: '123abc', version: '1', description: 'd', computeType: 'Standard_2XL', codeType: 'script' })
     ).to.throw(SfError, /must begin with a letter/i);
   });
 });
@@ -205,7 +204,7 @@ describe('nativeDeploy.buildDataTransformBody', () => {
     name: 'my_script',
     version: '1.0.0',
     description: 'd',
-    computeType: 'CPU_M',
+    computeType: 'Standard_2XL',
     codeType: 'script',
   };
 
@@ -714,7 +713,7 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
         version: '2.0.0',
         description: 'd',
         packageDir,
-        cpuSize: 'CPU_2XL',
+        cpuSize: 'Standard_2XL',
         connection: dummyConnection,
       },
       deps
@@ -729,9 +728,8 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
     });
     // Order preserved: create -> zip -> upload -> poll -> data transform.
     expect(order).to.deep.equal(['createDeployment', 'zip', 'uploadZip', 'getDeploymentStatus', 'createDataTransform']);
-    // CPU_2XL maps to the CPU_M wire compute type.
-    expect(createdMetadata[0].computeType).to.equal(COMPUTE_TYPES.CPU_2XL);
-    expect(createdMetadata[0].computeType).to.equal('CPU_M');
+    // The compute size is sent as the wire compute type unchanged.
+    expect(createdMetadata[0].computeType).to.equal('Standard_2XL');
     expect(createdMetadata[0].codeType).to.equal('script');
     expect(createdMetadata[0].name).to.equal('my_script');
     expect(createdMetadata[0].functionInvokeOptions).to.equal(undefined);
@@ -753,7 +751,7 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
           version: '1.0.0',
           description: 'd',
           packageDir,
-          cpuSize: 'CPU_2XL',
+          cpuSize: 'Standard_2XL',
           connection: dummyConnection,
         },
         deps
@@ -778,7 +776,7 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
           version: '1.0.0',
           description: 'd',
           packageDir,
-          cpuSize: 'CPU_2XL',
+          cpuSize: 'Standard_2XL',
           connection: dummyConnection,
         },
         deps
@@ -794,7 +792,14 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
     const { deps, createdMetadata, dataTransformBodies } = recordingDeps();
 
     await NativeDeployer.deploy(
-      { name: 'my_stream', version: '1', description: 'd', packageDir, cpuSize: 'CPU_L', connection: dummyConnection },
+      {
+        name: 'my_stream',
+        version: '1',
+        description: 'd',
+        packageDir,
+        cpuSize: 'Standard_L',
+        connection: dummyConnection,
+      },
       deps
     );
 
@@ -808,7 +813,14 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
     const { deps, createdMetadata, dataTransformBodies } = recordingDeps();
 
     await NativeDeployer.deploy(
-      { name: 'my_batch', version: '1', description: 'd', packageDir, cpuSize: 'CPU_L', connection: dummyConnection },
+      {
+        name: 'my_batch',
+        version: '1',
+        description: 'd',
+        packageDir,
+        cpuSize: 'Standard_L',
+        connection: dummyConnection,
+      },
       deps
     );
 
@@ -832,7 +844,7 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
         version: '1',
         description: 'd',
         packageDir,
-        cpuSize: 'CPU_L',
+        cpuSize: 'Standard_L',
         connection: dummyConnection,
         warn: (m) => warnings.push(m),
       },
@@ -863,7 +875,7 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
           version: '1',
           description: 'd',
           packageDir,
-          cpuSize: 'CPU_L',
+          cpuSize: 'Standard_L',
           connection: dummyConnection,
           warn: (m) => warnings.push(m),
         },
@@ -896,7 +908,7 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
           version: '1',
           description: 'd',
           packageDir,
-          cpuSize: 'CPU_L',
+          cpuSize: 'Standard_L',
           connection,
         })
       );
@@ -910,7 +922,7 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
   describe('deploy output', () => {
     async function deployLogs(
       pkg: PackageOptions,
-      cpuSize = 'CPU_L',
+      cpuSize = 'Standard_L',
       overrides: Partial<NativeDeployDeps> = {}
     ): Promise<string[]> {
       const { dir, packageDir } = await makePackage(pkg);
@@ -962,10 +974,9 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
       expect(typeIdx).to.be.lessThan(createIdx);
     });
 
-    it('logs the selected CPU size without the compute type it maps to', async () => {
-      const logs = await deployLogs({ packageType: 'script', config: SCRIPT_DLO_CONFIG }, 'CPU_L');
-      expect(logs).to.include('CPU size: CPU_L');
-      expect(logs.join('\n')).to.not.include('CPU_XS');
+    it('logs the selected compute size', async () => {
+      const logs = await deployLogs({ packageType: 'script', config: SCRIPT_DLO_CONFIG }, 'Standard_L');
+      expect(logs).to.include('Compute size: Standard_L');
     });
 
     it('warns that stopping early skips the data transform for scripts only', async () => {
@@ -985,7 +996,7 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
     it('logs polled statuses only when they change', async () => {
       const statuses = ['Initializing', 'Initializing', 'Initializing', 'Deployed'];
       let i = 0;
-      const logs = await deployLogs({ packageType: 'script', config: SCRIPT_DLO_CONFIG }, 'CPU_L', {
+      const logs = await deployLogs({ packageType: 'script', config: SCRIPT_DLO_CONFIG }, 'Standard_L', {
         getDeploymentStatus: async () => statuses[i++],
       });
       expect(logs.filter((m) => m.startsWith('Deployment status:'))).to.deep.equal([
@@ -1004,7 +1015,14 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
     const { deps, order, createdMetadata } = recordingDeps();
 
     const result = await NativeDeployer.deploy(
-      { name: 'my_fn', version: '1.0.0', description: 'd', packageDir, cpuSize: 'CPU_L', connection: dummyConnection },
+      {
+        name: 'my_fn',
+        version: '1.0.0',
+        description: 'd',
+        packageDir,
+        cpuSize: 'Standard_L',
+        connection: dummyConnection,
+      },
       deps
     );
 
@@ -1023,7 +1041,14 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
     const { deps } = recordingDeps();
     const err = await expectReject(
       NativeDeployer.deploy(
-        { name: 'my_fn', version: '1', description: 'd', packageDir, cpuSize: 'CPU_L', connection: dummyConnection },
+        {
+          name: 'my_fn',
+          version: '1',
+          description: 'd',
+          packageDir,
+          cpuSize: 'Standard_L',
+          connection: dummyConnection,
+        },
         deps
       )
     );
@@ -1031,26 +1056,28 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
     await fs.rm(dir, { recursive: true, force: true });
   });
 
-  it('rejects an invalid CPU size before touching the org', async () => {
-    const { dir, packageDir } = await makePackage({ packageType: 'script', config: SCRIPT_DLO_CONFIG });
-    const { deps, order } = recordingDeps();
-    const err = await expectReject(
-      NativeDeployer.deploy(
-        {
-          name: 'my_script',
-          version: '1',
-          description: 'd',
-          packageDir,
-          cpuSize: 'BOGUS',
-          connection: dummyConnection,
-        },
-        deps
-      )
-    );
-    expect(err.message).to.match(/Invalid CPU size/);
-    expect(order).to.have.length(0);
-    await fs.rm(dir, { recursive: true, force: true });
-  });
+  for (const cpuSize of ['BOGUS', 'CPU_2XL']) {
+    it(`rejects '${cpuSize}' as a compute size before touching the org`, async () => {
+      const { dir, packageDir } = await makePackage({ packageType: 'script', config: SCRIPT_DLO_CONFIG });
+      const { deps, order } = recordingDeps();
+      const err = await expectReject(
+        NativeDeployer.deploy(
+          {
+            name: 'my_script',
+            version: '1',
+            description: 'd',
+            packageDir,
+            cpuSize,
+            connection: dummyConnection,
+          },
+          deps
+        )
+      );
+      expect(err.message).to.match(/Invalid compute size/);
+      expect(order).to.have.length(0);
+      await fs.rm(dir, { recursive: true, force: true });
+    });
+  }
 
   it('maps a 409 from the deployment API to a friendly "name exists" error', async () => {
     const { dir, packageDir } = await makePackage({ packageType: 'script', config: SCRIPT_DLO_CONFIG });
@@ -1066,7 +1093,7 @@ describe('nativeDeploy.NativeDeployer.deploy', () => {
         version: '1',
         description: 'd',
         packageDir,
-        cpuSize: 'CPU_2XL',
+        cpuSize: 'Standard_2XL',
         connection,
       })
     );

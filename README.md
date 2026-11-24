@@ -87,15 +87,15 @@ Deploy a Data Code Extension function package to a Salesforce org.
 ```
 USAGE
   $ sf data-code-extension function deploy -n <value> --package-version <value> -d <value> -p <value> -o <value> [--flags-dir <value>]
-    [--network <value>] [--cpu-size CPU_L|CPU_XL|CPU_2XL|CPU_4XL]
+    [--network <value>] [--cpu-size Standard_L|Standard_XL|Standard_2XL|Standard_4XL]
 
 FLAGS
   -d, --description=<value>      (required) Description of the package.
   -n, --name=<value>             (required) Name of the package to deploy.
   -o, --target-org=<value>       (required) Target Salesforce org for deployment.
   -p, --package-dir=<value>      (required) Directory containing the packaged code.
-      --cpu-size=<option>        [default: CPU_2XL] CPU size for the deployment.
-                                 <options: CPU_L|CPU_XL|CPU_2XL|CPU_4XL>
+      --cpu-size=<option>        [default: Standard_2XL] Compute size for the deployment.
+                                 <options: Standard_L|Standard_XL|Standard_2XL|Standard_4XL>
       --network=<value>          Network configuration for Jupyter notebooks.
       --package-version=<value>  (required) Version of the package to deploy.
 
@@ -106,7 +106,7 @@ DESCRIPTION
   Deploy a Data Code Extension function package to a Salesforce org.
 
   Deploys an initialized and packaged Data Cloud code extension to a Salesforce org. The package must be initialized and
-  zipped before deployment. Supports both script and function packages with configurable CPU resources and network
+  zipped before deployment. Supports both script and function packages with configurable compute resources and network
   settings. Run this command from within the package directory (e.g. cd ./my-script-package).
 
 EXAMPLES
@@ -115,10 +115,10 @@ EXAMPLES
     $ sf data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" \
       --package-dir ./payload --target-org myorg
 
-  Deploy with a specific CPU size:
+  Deploy with a specific compute size:
 
     $ sf data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" \
-      --package-dir ./payload --target-org myorg --cpu-size CPU_4XL
+      --package-dir ./payload --target-org myorg --cpu-size Standard_4XL
 
 FLAG DESCRIPTIONS
   -d, --description=<value>  Description of the package.
@@ -141,10 +141,10 @@ FLAG DESCRIPTIONS
     The path to the directory containing your initialized and zipped Data Cloud custom code package. This directory
     contains the package files created by the 'zip' command.
 
-  --cpu-size=CPU_L|CPU_XL|CPU_2XL|CPU_4XL  CPU size for the deployment.
+  --cpu-size=Standard_L|Standard_XL|Standard_2XL|Standard_4XL  Compute size for the deployment.
 
-    The CPU allocation size for your deployed package. Options are: CPU_L (small), CPU_XL (large), CPU_2XL (extra large,
-    default), CPU_4XL (maximum). Higher CPU sizes provide more processing power but may have quota implications.
+    The compute size for your deployed package. Options are: Standard_L (large), Standard_XL (extra large), Standard_2XL (2X large,
+    default), Standard_4XL (4X large, maximum). Larger sizes provide more processing power but may have quota implications.
 
   --network=<value>  Network configuration for Jupyter notebooks.
 
@@ -380,15 +380,15 @@ Deploy a Data Code Extension script package to a Salesforce org.
 ```
 USAGE
   $ sf data-code-extension script deploy -n <value> --package-version <value> -d <value> -p <value> -o <value> [--flags-dir <value>]
-    [--network <value>] [--cpu-size CPU_L|CPU_XL|CPU_2XL|CPU_4XL]
+    [--network <value>] [--cpu-size Standard_L|Standard_XL|Standard_2XL|Standard_4XL]
 
 FLAGS
   -d, --description=<value>      (required) Description of the package.
   -n, --name=<value>             (required) Name of the package to deploy.
   -o, --target-org=<value>       (required) Target Salesforce org for deployment.
   -p, --package-dir=<value>      (required) Directory containing the packaged code.
-      --cpu-size=<option>        [default: CPU_2XL] CPU size for the deployment.
-                                 <options: CPU_L|CPU_XL|CPU_2XL|CPU_4XL>
+      --cpu-size=<option>        [default: Standard_2XL] Compute size for the deployment.
+                                 <options: Standard_L|Standard_XL|Standard_2XL|Standard_4XL>
       --network=<value>          Network configuration for Jupyter notebooks.
       --package-version=<value>  (required) Version of the package to deploy.
 
@@ -399,7 +399,7 @@ DESCRIPTION
   Deploy a Data Code Extension script package to a Salesforce org.
 
   Deploys an initialized and packaged Data Cloud code extension to a Salesforce org. The package must be initialized and
-  zipped before deployment. Supports both script and function packages with configurable CPU resources and network
+  zipped before deployment. Supports both script and function packages with configurable compute resources and network
   settings. Run this command from within the package directory (e.g. cd ./my-script-package).
 
 EXAMPLES
@@ -408,10 +408,10 @@ EXAMPLES
     $ sf data-code-extension script deploy --name my-package --package-version 1.0.0 --description "My package" \
       --package-dir ./payload --target-org myorg
 
-  Deploy with a specific CPU size:
+  Deploy with a specific compute size:
 
     $ sf data-code-extension script deploy --name my-package --package-version 1.0.0 --description "My package" \
-      --package-dir ./payload --target-org myorg --cpu-size CPU_4XL
+      --package-dir ./payload --target-org myorg --cpu-size Standard_4XL
 
 FLAG DESCRIPTIONS
   -d, --description=<value>  Description of the package.
@@ -434,10 +434,10 @@ FLAG DESCRIPTIONS
     The path to the directory containing your initialized and zipped Data Cloud custom code package. This directory
     contains the package files created by the 'zip' command.
 
-  --cpu-size=CPU_L|CPU_XL|CPU_2XL|CPU_4XL  CPU size for the deployment.
+  --cpu-size=Standard_L|Standard_XL|Standard_2XL|Standard_4XL  Compute size for the deployment.
 
-    The CPU allocation size for your deployed package. Options are: CPU_L (small), CPU_XL (large), CPU_2XL (extra large,
-    default), CPU_4XL (maximum). Higher CPU sizes provide more processing power but may have quota implications.
+    The compute size for your deployed package. Options are: Standard_L (large), Standard_XL (extra large), Standard_2XL (2X large,
+    default), Standard_4XL (4X large, maximum). Larger sizes provide more processing power but may have quota implications.
 
   --network=<value>  Network configuration for Jupyter notebooks.
 
