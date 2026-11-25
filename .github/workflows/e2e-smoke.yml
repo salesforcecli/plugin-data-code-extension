@@ -19,12 +19,12 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         node: ['lts/*']
         # Oldest supported SDK release, and whatever is newest on PyPI.
-        sdk: ['7.0.0', 'latest']
+        sdk: ['7.1.0', 'latest']
         include:
           # Minimum Node version from package.json `engines`.
           - os: ubuntu-latest
             node: '22.19.0'
-            sdk: '7.0.0'
+            sdk: '7.1.0'
     steps:
       - uses: actions/checkout@v4
 
