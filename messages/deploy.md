@@ -4,7 +4,7 @@ Deploy a Data Code Extension %s package to a Salesforce org.
 
 # description
 
-Deploys an initialized and packaged Data Cloud code extension to a Salesforce org. The package must be initialized and zipped before deployment. Supports both script and function packages with configurable CPU resources and network settings. Run this command from within the package directory (e.g. cd ./my-script-package).
+Deploys an initialized and packaged Data Cloud code extension to a Salesforce org. The package must be initialized and zipped before deployment. Supports both script and function packages with configurable compute resources and network settings. Run this command from within the package directory (e.g. cd ./my-script-package).
 
 # examples
 
@@ -12,9 +12,9 @@ Deploys an initialized and packaged Data Cloud code extension to a Salesforce or
 
   <%= config.bin %> data-code-extension %s deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg
 
-- Deploy with a specific CPU size:
+- Deploy with a specific compute size:
 
-  <%= config.bin %> data-code-extension %s deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg --cpu-size CPU_4XL
+  <%= config.bin %> data-code-extension %s deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg --cpu-size Standard_4XL
 
 # examples.script
 
@@ -22,9 +22,9 @@ Deploys an initialized and packaged Data Cloud code extension to a Salesforce or
 
   <%= config.bin %> data-code-extension script deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg
 
-- Deploy with a specific CPU size:
+- Deploy with a specific compute size:
 
-  <%= config.bin %> data-code-extension script deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg --cpu-size CPU_4XL
+  <%= config.bin %> data-code-extension script deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg --cpu-size Standard_4XL
 
 # examples.function
 
@@ -32,9 +32,9 @@ Deploys an initialized and packaged Data Cloud code extension to a Salesforce or
 
   <%= config.bin %> data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg
 
-- Deploy with a specific CPU size:
+- Deploy with a specific compute size:
 
-  <%= config.bin %> data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg --cpu-size CPU_4XL
+  <%= config.bin %> data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg --cpu-size Standard_4XL
 
 # info.checkingPython
 
@@ -130,11 +130,11 @@ The path to the directory containing your initialized and zipped Data Cloud cust
 
 # flags.cpuSize.summary
 
-CPU size for the deployment.
+Compute size for the deployment.
 
 # flags.cpuSize.description
 
-The CPU allocation size for your deployed package. Options are: CPU_L (small), CPU_XL (large), CPU_2XL (extra large, default), CPU_4XL (maximum). Higher CPU sizes provide more processing power but may have quota implications.
+The compute size for your deployed package. Options are: Standard_L (large), Standard_XL (extra large), Standard_2XL (2X large, default), Standard_4XL (4X large, maximum). Larger sizes provide more processing power but may have quota implications.
 
 # flags.targetOrg.summary
 
@@ -174,7 +174,7 @@ inferred from the entrypoint signature
 
 # info.cpuSize
 
-CPU size: %s
+Compute size: %s
 
 # info.creatingDeployment
 
@@ -210,7 +210,7 @@ Creating data transform...
 
 # error.invalidCpuSize
 
-Invalid CPU size '%s'. Available options: %s.
+Invalid compute size '%s'. Available options: %s.
 
 # error.invalidApiName
 

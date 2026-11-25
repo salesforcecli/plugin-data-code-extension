@@ -42,16 +42,11 @@ const CONFIG_FILE = 'config.json';
 const DEFAULT_NETWORK = 'default';
 
 /**
- * Maps the user-facing `--cpu-size` value to the Data Cloud wire compute type.
- * The offset (e.g. CPU_2XL -> CPU_M) is intentional and must match exactly; it
- * mirrors `COMPUTE_TYPES` in `datacustomcode/deploy.py`, so do not "correct" it.
+ * The approved compute sizes. The `--cpu-size` value is sent to Data Cloud as the
+ * wire compute type unchanged; it mirrors `COMPUTE_TYPES` in `datacustomcode/deploy.py`.
  */
-export const COMPUTE_TYPES: Record<string, string> = {
-  CPU_L: 'CPU_XS',
-  CPU_XL: 'CPU_S',
-  CPU_2XL: 'CPU_M',
-  CPU_4XL: 'CPU_L',
-};
+export const COMPUTE_TYPES = ['Standard_L', 'Standard_XL', 'Standard_2XL', 'Standard_4XL'] as const;
+export const DEFAULT_COMPUTE_TYPE = 'Standard_2XL';
 
 // Mirror of the two lookup tables in `datacustomcode/constants.py` that the
 // function-deploy path relies on.
@@ -123,7 +118,7 @@ export type NativeDeployOptions = {
   description: string;
   /** The `--package-dir` value (Python's `--path`, e.g. `payload`). */
   packageDir: string;
-  /** One of the COMPUTE_TYPES keys (CPU_L | CPU_XL | CPU_2XL | CPU_4XL). */
+  /** One of COMPUTE_TYPES (Standard_L | Standard_XL | Standard_2XL | Standard_4XL). */
   cpuSize: string;
   /** Docker network passed through to the zip/dependency build. Defaults to `default`. */
   network?: string;
@@ -818,10 +813,10 @@ export class NativeDeployer {
     const log = opts.log ?? ((): void => {});
     const warn = opts.warn ?? log;
 
-    const computeType = COMPUTE_TYPES[opts.cpuSize];
-    if (!computeType) {
+    const computeType = opts.cpuSize;
+    if (!(COMPUTE_TYPES as readonly string[]).includes(computeType)) {
       throw new SfError(
-        messages.getMessage('error.invalidCpuSize', [opts.cpuSize, Object.keys(COMPUTE_TYPES).join(', ')]),
+        messages.getMessage('error.invalidCpuSize', [opts.cpuSize, COMPUTE_TYPES.join(', ')]),
         'InvalidCpuSize'
       );
     }

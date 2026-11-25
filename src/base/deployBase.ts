@@ -15,7 +15,7 @@
  */
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages, Org, SfError } from '@salesforce/core';
-import { NativeDeployer } from '../utils/nativeDeploy.js';
+import { COMPUTE_TYPES, DEFAULT_COMPUTE_TYPE, NativeDeployer } from '../utils/nativeDeploy.js';
 import { type SharedResultProps } from './types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -105,8 +105,8 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
     'cpu-size': Flags.string({
       summary: messages.getMessage('flags.cpuSize.summary'),
       description: messages.getMessage('flags.cpuSize.description'),
-      options: ['CPU_L', 'CPU_XL', 'CPU_2XL', 'CPU_4XL'],
-      default: 'CPU_2XL',
+      options: [...COMPUTE_TYPES],
+      default: DEFAULT_COMPUTE_TYPE,
     }),
     'target-org': Flags.requiredOrg({
       char: 'o',
@@ -126,7 +126,7 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
     const description = flags.description;
     const packageDir = flags['package-dir'];
     const targetOrg = flags['target-org'];
-    const cpuSize = flags['cpu-size'] || 'CPU_2XL';
+    const cpuSize = flags['cpu-size'] || DEFAULT_COMPUTE_TYPE;
     const network = flags.network;
 
     if (packageDir.length === 0) {
