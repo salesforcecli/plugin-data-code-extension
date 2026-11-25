@@ -1,3 +1,13 @@
+# [2.0.0](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.7.0...2.0.0) (2026-11-25)
+
+### Features
+
+- restrict deploy compute sizes to Standard_L/XL/2XL/4XL ([22fa00a](https://github.com/salesforcecli/plugin-data-code-extension/commit/22fa00a643081d2c35bb8fae3d24084a0d0eb525))
+
+### BREAKING CHANGES
+
+- --cpu-size no longer accepts CPU_L, CPU_XL, CPU_2XL or CPU_4XL.
+
 # [1.7.0](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.6.3...1.7.0) (2026-11-12)
 
 ### Bug Fixes

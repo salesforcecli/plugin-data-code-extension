@@ -143,8 +143,9 @@ FLAG DESCRIPTIONS
 
   --cpu-size=Standard_L|Standard_XL|Standard_2XL|Standard_4XL  Compute size for the deployment.
 
-    The compute size for your deployed package. Options are: Standard_L (large), Standard_XL (extra large), Standard_2XL (2X large,
-    default), Standard_4XL (4X large, maximum). Larger sizes provide more processing power but may have quota implications.
+    The compute size for your deployed package. Options are: Standard_L (large), Standard_XL (extra large), Standard_2XL
+    (2X large, default), Standard_4XL (4X large, maximum). Larger sizes provide more processing power but may have quota
+    implications.
 
   --network=<value>  Network configuration for Jupyter notebooks.
 
@@ -156,7 +157,7 @@ FLAG DESCRIPTIONS
     Reserved for future use.
 ```
 
-_See code: [src/commands/data-code-extension/function/deploy.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/1.7.0/src/commands/data-code-extension/function/deploy.ts)_
+_See code: [src/commands/data-code-extension/function/deploy.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/2.0.0/src/commands/data-code-extension/function/deploy.ts)_
 
 ## `sf data-code-extension function init`
 
@@ -196,7 +197,7 @@ FLAG DESCRIPTIONS
     used by default if not specified.
 ```
 
-_See code: [src/commands/data-code-extension/function/init.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/1.7.0/src/commands/data-code-extension/function/init.ts)_
+_See code: [src/commands/data-code-extension/function/init.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/2.0.0/src/commands/data-code-extension/function/init.ts)_
 
 ## `sf data-code-extension function run`
 
@@ -265,7 +266,7 @@ FLAG DESCRIPTIONS
     The org must have Data Cloud enabled and appropriate permissions.
 ```
 
-_See code: [src/commands/data-code-extension/function/run.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/1.7.0/src/commands/data-code-extension/function/run.ts)_
+_See code: [src/commands/data-code-extension/function/run.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/2.0.0/src/commands/data-code-extension/function/run.ts)_
 
 ## `sf data-code-extension function scan`
 
@@ -331,7 +332,7 @@ FLAG DESCRIPTIONS
     Useful for testing different configurations without modifying the package's primary config.json.
 ```
 
-_See code: [src/commands/data-code-extension/function/scan.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/1.7.0/src/commands/data-code-extension/function/scan.ts)_
+_See code: [src/commands/data-code-extension/function/scan.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/2.0.0/src/commands/data-code-extension/function/scan.ts)_
 
 ## `sf data-code-extension function zip`
 
@@ -371,7 +372,7 @@ FLAG DESCRIPTIONS
     contain a valid package structure with config.json.
 ```
 
-_See code: [src/commands/data-code-extension/function/zip.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/1.7.0/src/commands/data-code-extension/function/zip.ts)_
+_See code: [src/commands/data-code-extension/function/zip.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/2.0.0/src/commands/data-code-extension/function/zip.ts)_
 
 ## `sf data-code-extension script deploy`
 
@@ -436,8 +437,9 @@ FLAG DESCRIPTIONS
 
   --cpu-size=Standard_L|Standard_XL|Standard_2XL|Standard_4XL  Compute size for the deployment.
 
-    The compute size for your deployed package. Options are: Standard_L (large), Standard_XL (extra large), Standard_2XL (2X large,
-    default), Standard_4XL (4X large, maximum). Larger sizes provide more processing power but may have quota implications.
+    The compute size for your deployed package. Options are: Standard_L (large), Standard_XL (extra large), Standard_2XL
+    (2X large, default), Standard_4XL (4X large, maximum). Larger sizes provide more processing power but may have quota
+    implications.
 
   --network=<value>  Network configuration for Jupyter notebooks.
 
@@ -449,7 +451,7 @@ FLAG DESCRIPTIONS
     Reserved for future use.
 ```
 
-_See code: [src/commands/data-code-extension/script/deploy.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/1.7.0/src/commands/data-code-extension/script/deploy.ts)_
+_See code: [src/commands/data-code-extension/script/deploy.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/2.0.0/src/commands/data-code-extension/script/deploy.ts)_
 
 ## `sf data-code-extension script init`
 
@@ -492,7 +494,7 @@ FLAG DESCRIPTIONS
     salesforce-data-customcode 7.0.0 or later.
 ```
 
-_See code: [src/commands/data-code-extension/script/init.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/1.7.0/src/commands/data-code-extension/script/init.ts)_
+_See code: [src/commands/data-code-extension/script/init.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/2.0.0/src/commands/data-code-extension/script/init.ts)_
 
 ## `sf data-code-extension script run`
 
@@ -550,7 +552,7 @@ FLAG DESCRIPTIONS
     the active Python environment.
 ```
 
-_See code: [src/commands/data-code-extension/script/run.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/1.7.0/src/commands/data-code-extension/script/run.ts)_
+_See code: [src/commands/data-code-extension/script/run.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/2.0.0/src/commands/data-code-extension/script/run.ts)_
 
 ## `sf data-code-extension script scan`
 
@@ -615,7 +617,7 @@ FLAG DESCRIPTIONS
     Useful for testing different configurations without modifying the package's primary config.json.
 ```
 
-_See code: [src/commands/data-code-extension/script/scan.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/1.7.0/src/commands/data-code-extension/script/scan.ts)_
+_See code: [src/commands/data-code-extension/script/scan.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/2.0.0/src/commands/data-code-extension/script/scan.ts)_
 
 ## `sf data-code-extension script zip`
 
@@ -655,6 +657,6 @@ FLAG DESCRIPTIONS
     contain a valid package structure with config.json.
 ```
 
-_See code: [src/commands/data-code-extension/script/zip.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/1.7.0/src/commands/data-code-extension/script/zip.ts)_
+_See code: [src/commands/data-code-extension/script/zip.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/2.0.0/src/commands/data-code-extension/script/zip.ts)_
 
 <!-- commandsstop -->
