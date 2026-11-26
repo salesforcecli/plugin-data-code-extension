@@ -42,14 +42,11 @@ export type NativeInitOptions = {
 export type NativeInitResult = {
   filesCreated: string[];
   configPath: string;
-  testJsonPath?: string;
 };
 
 const ENTRYPOINT_FILE = 'entrypoint.py';
 const CONFIG_FILE = 'config.json';
 const PAYLOAD_DIR = 'payload';
-const TESTS_DIR = 'tests';
-const TEST_FILE = 'test.json';
 const SDK_CONFIG_DIR = '.datacustomcode_proj';
 const SDK_CONFIG_FILE = 'sdk_config.json';
 // Mirror of `datacustomcode/template.py`: the streaming example entrypoint, and the SDK's
@@ -75,7 +72,6 @@ const FEATURE_TEMPLATE_DIRS = new Set<string>(Object.values(FEATURE_TEMPLATE_MAP
  * 2. Write `<packageDir>/.datacustomcode_proj/sdk_config.json` with the package type.
  * 3. Generate the initial `config.json` next to the entrypoint (with sdkVersion for
  * scripts), then re-scan the entrypoint to fill in DLO/DMO permissions.
- * 4. For function packages, best-effort generate `tests/test.json` for known features.
  */
 export async function executeNativeInit(opts: NativeInitOptions): Promise<NativeInitResult> {
   const { codeType, packageDir, pythonPackageLocation, pythonPackageVersion, useInFeature } = opts;
@@ -122,13 +118,7 @@ export async function executeNativeInit(opts: NativeInitOptions): Promise<Native
   const finalConfig = await updateConfig(entrypointPath, codeType, configPath);
   await writeJson(configPath, finalConfig);
 
-  // 4. Function: best-effort test.json
-  let testJsonPath: string | undefined;
-  if (codeType === 'function') {
-    testJsonPath = await generateFunctionTestFile(entrypointPath, useInFeature);
-  }
-
-  return { filesCreated, configPath, testJsonPath };
+  return { filesCreated, configPath };
 }
 
 /** Mirror of `datacustomcode/cli.py:init` for scripts: defaults to BatchTransform, rejects unknown values. */
@@ -288,77 +278,6 @@ function buildInitialConfig(
     };
   }
   return { entryPoint: path.basename(entrypointPath) };
-}
-
-/**
- * Function packages: write a sample `tests/test.json` for known feature types.
- * Best-effort — failure does not fail init (matches Python try/except behavior).
- */
-async function generateFunctionTestFile(
-  entrypointPath: string,
-  useInFeature: string | undefined
-): Promise<string | undefined> {
-  const sample = sampleRequestForFeature(useInFeature);
-  if (!sample) {
-    debug('no sample test.json available for feature: %s', useInFeature);
-    return undefined;
-  }
-
-  try {
-    const testsDir = path.join(path.dirname(entrypointPath), TESTS_DIR);
-    await fs.mkdir(testsDir, { recursive: true });
-    const testJsonPath = path.join(testsDir, TEST_FILE);
-    await writeJson(testJsonPath, sample);
-    return testJsonPath;
-  } catch (err) {
-    debug('failed to write test.json: %o', err);
-    return undefined;
-  }
-}
-
-function sampleRequestForFeature(useInFeature: string | undefined): Record<string, unknown> | undefined {
-  // Mirrors Python's `_generate_model_sample_data` output for SearchIndexChunkingV1Request.
-  // Values come from the Pydantic field examples on `chunking.py`; pydantic coerces the
-  // example strings ("1.0", "8.75") to floats during model_dump.
-  //
-  // The keys below are snake_case + `__c` Salesforce field names that the wire format
-  // requires verbatim. Disabling camelcase here is the right tradeoff: prettier's
-  // `quoteProps: as-needed` reformats quoted keys back to identifiers, so we can't keep
-  // them quoted to satisfy eslint without also tweaking prettier config repo-wide.
-  if (useInFeature !== 'SearchIndexChunking') return undefined;
-  return JSON.parse(`{
-    "input": [
-      {
-        "text": "Online Remittance Instructions\\n\\nTransfer proceeds from the sale of your ESOP/RSUs easily.",
-        "metadata": {
-          "type": "text",
-          "page_number": 1,
-          "transcript_fields": {
-            "speaker": "Agent",
-            "start_timestamp": 1.0,
-            "end_timestamp": 8.75
-          },
-          "text_as_html": "<p>Online Remittance Instructions</p>",
-          "source_dmo_fields": {
-            "FilePath__c": "quarterly_report.pdf",
-            "Size__c": 1377454.0,
-            "ContentType__c": "pdf",
-            "LastModified__c": "2026-03-25T02:01:24.918000"
-          },
-          "prepend": [
-            {
-              "dmo_name": "udmo_1__dlm",
-              "field_name": "ResolvedFilePath__c",
-              "value": "udlo_1__dll:quarterly_report.pdf"
-            }
-          ],
-          "image_base64": "sample_image_base64",
-          "image_mime_type": "image/png",
-          "image_type": "diagram"
-        }
-      }
-    ]
-  }`) as Record<string, unknown>;
 }
 
 async function pathExists(p: string): Promise<boolean> {
